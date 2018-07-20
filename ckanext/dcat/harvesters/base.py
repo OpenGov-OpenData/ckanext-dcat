@@ -61,7 +61,7 @@ class DCATHarvester(HarvesterBase):
 
 
             log.debug('Getting file %s', url)
-            
+
             # get the `requests` session object
             session = requests.Session()
             for harvester in p.PluginImplementations(IDCATRDFHarvester):
@@ -192,6 +192,41 @@ class DCATHarvester(HarvesterBase):
                 [{'name':g['name']} for g in self.config['default_group_dicts']
                  if g['id'] not in existing_group_ids])
 
+        # set default values from config
+        default_values = self.config.get('default_values',[])
+        if default_values:
+            for default_field in default_values:
+                for key in default_field:
+                    package_dict[key] = default_field[key]
+                    # Remove from extras any keys present in the config
+                    extras = [x for x in package_dict.get('extras',[]) if not (key == x.get('key'))]
+                    package_dict['extras'] = extras
+
+        # set the mapping fields its corresponding default_values
+        map_fields = self.config.get('map_fields',[])
+        if map_fields:
+            for map_field in map_fields:
+                source_field = map_field.get('source')
+                target_field = map_field.get('target')
+                default_value = map_field.get('default')
+                package_dict[target_field] = dcat_dict.get(source_field, default_value)
+                # Remove from extras any keys present in the config
+                extras =  [x for x in package_dict.get('extras',[]) if not (target_field == x.get('key'))]
+                package_dict['extras'] = extras
+
+        # set the contact point
+        contact_point_mapping = self.config.get('contact_point',[])
+        if contact_point_mapping:
+            contactPoint = dcat_dict.get('contactPoint',{})
+            if contactPoint:
+                contactPointName = contactPoint.get('fn')
+                contactPointEmail = contactPoint.get('hasEmail',':').split(':')[1]
+            for key in contact_point_mapping:
+                if contact_point_mapping[key] and key == 'name_field':
+                    package_dict[contact_point_mapping[key]] = contactPointName
+                if contact_point_mapping[key] and key == 'email_field':
+                    package_dict[contact_point_mapping[key]] = contactPointEmail
+
         # Set default extras if needed
         default_extras = self.config.get('default_extras', {})
         def get_extra(key, package_dict):
@@ -219,6 +254,28 @@ class DCATHarvester(HarvesterBase):
             log.debug('Using config: %r', self.config)
         else:
             self.config = {}
+
+    def _get_existing_dataset(self, guid):
+        '''
+        Checks if a dataset with a certain guid extra already exists
+
+        Returns a dict as the ones returned by package_show
+        '''
+
+        datasets = model.Session.query(model.Package.id) \
+                                .join(model.PackageExtra) \
+                                .filter(model.PackageExtra.key == 'guid') \
+                                .filter(model.PackageExtra.value == guid) \
+                                .filter(model.Package.state == 'active') \
+                                .all()
+
+        if not datasets:
+            return None
+        elif len(datasets) > 1:
+            log.error('Found more than one dataset with the same guid: {0}'
+                      .format(guid))
+
+        return p.toolkit.get_action('package_show')({}, {'id': datasets[0][0]})
 
     def validate_config(self, config):
         if not config:
@@ -254,10 +311,14 @@ class DCATHarvester(HarvesterBase):
                         raise ValueError('Default group not found')
                 config = json.dumps(config_obj)
 
-
             if 'default_extras' in config_obj:
                 if not isinstance(config_obj['default_extras'], dict):
                     raise ValueError('default_extras must be a dictionary')
+
+            if 'organizations_filter_include' in config_obj \
+                and 'organizations_filter_exclude' in config_obj:
+                raise ValueError('Harvest configuration cannot contain both '
+                    'organizations_filter_include and organizations_filter_exclude')
 
         except ValueError, e:
             raise e
@@ -268,7 +329,6 @@ class DCATHarvester(HarvesterBase):
 
     def gather_stage(self,harvest_job):
         log.debug('In DCATHarvester gather_stage')
-
 
         ids = []
 
@@ -284,6 +344,7 @@ class DCATHarvester(HarvesterBase):
         guids_in_db = guid_to_package_id.keys()
         guids_in_source = []
 
+        config = self._set_config(harvest_job.source.config)
 
         # Get file contents
         url = harvest_job.source.url
@@ -325,7 +386,7 @@ class DCATHarvester(HarvesterBase):
                     if guid not in previous_guids:
 
                         if guid in guids_in_db:
-                            # Dataset needs to be udpated
+                            # Dataset needs to be updated
                             obj = HarvestObject(guid=guid, job=harvest_job,
                                             package_id=guid_to_package_id[guid],
                                             content=as_string,
@@ -380,6 +441,7 @@ class DCATHarvester(HarvesterBase):
 
     def import_stage(self,harvest_object):
         log.debug('In DCATHarvester import_stage')
+
         if not harvest_object:
             log.error('No harvest object received')
             return False
@@ -421,6 +483,20 @@ class DCATHarvester(HarvesterBase):
 
         if not package_dict.get('name'):
             package_dict['name'] = self._get_package_name(harvest_object, package_dict['title'])
+
+        # copy across resource ids from the existing dataset, otherwise they'll
+        # be recreated with new ids
+        if status== 'change':
+            existing_dataset = self._get_existing_dataset(harvest_object.guid)
+            if existing_dataset:
+                # check if resources already exist based on their URL
+                existing_resources =  existing_dataset.get('resources')
+                resource_mapping = {r.get('url'): r.get('id')
+                                    for r in existing_resources}
+                for resource in package_dict.get('resources'):
+                    res_url = resource.get('url')
+                    if res_url and res_url in resource_mapping:
+                        resource['id'] = resource_mapping[res_url]
 
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package

@@ -22,6 +22,10 @@ class DCATJSONHarvester(DCATHarvester):
 
         doc = json.loads(content)
 
+        # Filter in/out datasets from particular organizations
+        org_filter_include = self.config.get('organizations_filter_include', [])
+        org_filter_exclude = self.config.get('organizations_filter_exclude', [])
+
         if isinstance(doc, list):
             # Assume a list of datasets
             datasets = doc
@@ -31,6 +35,21 @@ class DCATJSONHarvester(DCATHarvester):
             raise ValueError('Wrong JSON object')
 
         for dataset in datasets:
+
+            # Get the organization name for the dataset
+            dcat_publisher = dataset.get('publisher')
+            if isinstance(dcat_publisher, basestring):
+                dcat_publisher_name = dcat_publisher
+            elif isinstance(dcat_publisher, dict) and dcat_publisher.get('name'):
+                dcat_publisher_name = dcat_publisher.get('name')
+
+            # Include/exclude dataset if from particular organizations
+            if org_filter_include:
+                if dcat_publisher_name not in org_filter_include:
+                    continue
+            elif org_filter_exclude:
+                if dcat_publisher_name in org_filter_exclude:
+                    continue
 
             as_string = json.dumps(dataset)
 
