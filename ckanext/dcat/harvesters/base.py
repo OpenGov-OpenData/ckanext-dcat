@@ -211,8 +211,16 @@ class DCATHarvester(HarvesterBase):
                 default_value = map_field.get('default')
                 package_dict[target_field] = dcat_dict.get(source_field, default_value)
                 # Remove from extras any keys present in the config
-                extras =  [x for x in package_dict.get('extras',[]) if not (target_field == x.get('key'))]
+                extras = [x for x in package_dict.get('extras',[]) if not (target_field == x.get('key'))]
                 package_dict['extras'] = extras
+
+        # set the publisher
+        publisher_mapping = self.config.get('publisher',[])
+        if publisher_mapping:
+            publisher = dcat_dict.get('publisher',{})
+            publisher_name = publisher.get('name') or publisher.get('title')
+            if publisher_mapping.get('publisher_field'):
+                package_dict[publisher_mapping['publisher_field']] = publisher_name
 
         # set the contact point
         contact_point_mapping = self.config.get('contact_point',[])
@@ -314,6 +322,26 @@ class DCATHarvester(HarvesterBase):
             if 'default_extras' in config_obj:
                 if not isinstance(config_obj['default_extras'], dict):
                     raise ValueError('default_extras must be a dictionary')
+
+            if 'default_values' in config_obj:
+                if not isinstance(config_obj['default_values'], list):
+                    raise ValueError('default_values must be a *list* of dictionaries')
+                if config_obj['default_values'] and not isinstance(config_obj['default_values'][0], dict):
+                    raise ValueError('default_values must be a *list* of dictionaries')
+
+            if 'map_fields' in config_obj:
+                if not isinstance(config_obj['map_fields'], list):
+                    raise ValueError('map_fields must be a *list* of dictionaries')
+                if config_obj['map_fields'] and not isinstance(config_obj['map_fields'][0], dict):
+                    raise ValueError('map_fields must be a *list* of dictionaries')
+
+            if 'publisher' in config_obj:
+                if not isinstance(config_obj['publisher'], dict):
+                    raise ValueError('publisher must be a dictionary')
+
+            if 'contact_point' in config_obj:
+                if not isinstance(config_obj['contact_point'], dict):
+                    raise ValueError('contact_point must be a dictionary')
 
             if 'organizations_filter_include' in config_obj \
                 and 'organizations_filter_exclude' in config_obj:
