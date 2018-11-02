@@ -20,6 +20,18 @@ def dcat_to_ckan(dcat_dict):
         package_dict['tags'].append({'name': keyword})
 
     package_dict['extras'] = []
+
+    bbox = dcat_dict.get('spatial','').split(',')
+    if len(bbox) == 4:
+        point_a = "["+bbox[0]+","+bbox[1]+"]"
+        point_b = "["+bbox[0]+","+bbox[3]+"]"
+        point_c = "["+bbox[2]+","+bbox[3]+"]"
+        point_d = "["+bbox[2]+","+bbox[1]+"]"
+        coordinates = "["+point_a+","+point_b+","+point_c+","+point_d+","+point_a+"]"
+        bbox_str = "{'type':'Polygon','coordinates': ["+coordinates+"]}"
+        bbox_str = bbox_str.replace("'",'"')
+        package_dict['extras'] += [{"key":"spatial", "value":bbox_str}]
+
     for key in ['issued', 'modified']:
         package_dict['extras'].append({'key': 'dcat_{0}'.format(key), 'value': dcat_dict.get(key)})
 
