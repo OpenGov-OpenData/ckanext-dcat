@@ -226,9 +226,12 @@ class DCATHarvester(HarvesterBase):
         contact_point_mapping = self.config.get('contact_point',[])
         if contact_point_mapping:
             contactPoint = dcat_dict.get('contactPoint',{})
-            if contactPoint:
-                contactPointName = contactPoint.get('fn')
-                contactPointEmail = contactPoint.get('hasEmail',':').split(':')[1]
+            # try to get name and email from data catalog
+            # use default name or email if either is missing
+            contactPointName = contactPoint.get('fn') or \
+                               contact_point_mapping.get('default_name')
+            contactPointEmail = contactPoint.get('hasEmail',':').split(':')[1] or \
+                                contact_point_mapping.get('default_email')
             for key in contact_point_mapping:
                 if contact_point_mapping[key] and key == 'name_field':
                     package_dict[contact_point_mapping[key]] = contactPointName
