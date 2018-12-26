@@ -1,7 +1,10 @@
 from past.builtins import basestring
 import logging
+import mimetypes
+import re
 
 log = logging.getLogger(__name__)
+mimetypes.init()
 
 
 def dcat_to_ckan(dcat_dict):
@@ -30,18 +33,35 @@ def dcat_to_ckan(dcat_dict):
         package_dict['extras'].append({'key': 'dcat_publisher_name', 'value': dcat_publisher.get('name')})
         package_dict['extras'].append({'key': 'dcat_publisher_email', 'value': dcat_publisher.get('mbox')})
 
-    package_dict['extras'].append({
-        'key': 'language',
-        'value': ','.join(dcat_dict.get('language', []))
-    })
+    bbox = dcat_dict.get('spatial','').split(',')
+    if len(bbox) == 4:
+        point_a = '[{},{}]'.format(bbox[0], bbox[1])
+        point_b = '[{},{}]'.format(bbox[0], bbox[3])
+        point_c = '[{},{}]'.format(bbox[2], bbox[3])
+        point_d = '[{},{}]'.format(bbox[2], bbox[1])
+        coordinates = '[{},{},{},{},{}]'.format(point_a, point_b, point_c, point_d, point_a)
+        bbox_str = '{\"type\": \"Polygon\", \"coordinates\": [' + coordinates + ']}'
+        package_dict['extras'].append({"key": "spatial", "value": bbox_str})
+
+    #package_dict['extras'].append({
+    #    'key': 'language',
+    #    'value': ','.join(dcat_dict.get('language', []))
+    #})
 
     package_dict['resources'] = []
     for distribution in dcat_dict.get('distribution', []):
+        format = ''
+        if distribution.get('format'):
+            format = distribution.get('format')
+        elif distribution.get('mediaType'):
+            ext = mimetypes.guess_extension(distribution.get('mediaType'))
+            if ext:
+                format = ext[1:]
         resource = {
-            'name': distribution.get('title'),
+            'name': distribution.get('title', dcat_dict.get('title')),
             'description': distribution.get('description'),
             'url': distribution.get('downloadURL') or distribution.get('accessURL'),
-            'format': distribution.get('format'),
+            'format': format,
         }
 
         if distribution.get('byteSize'):
