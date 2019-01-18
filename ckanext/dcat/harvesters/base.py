@@ -217,6 +217,11 @@ class DCATHarvester(HarvesterBase):
             tags = package_dict.get('tags', [])
             package_dict['tags'] = self._clean_tags(tags)
 
+        # single character tags are not valid
+        tags_list = package_dict.get('tags', [])
+        if tags_list:
+            package_dict['tags'] = [tag for tag in tags_list if len(tag['name']) > 1]
+
         # Set default groups if needed
         default_groups = self.config.get('default_groups', [])
         if default_groups:
