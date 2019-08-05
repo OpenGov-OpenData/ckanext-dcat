@@ -51,6 +51,10 @@ class DCATJSONHarvester(DCATHarvester):
                 dcat_publisher_name = dcat_publisher
             elif isinstance(dcat_publisher, dict) and dcat_publisher.get('name'):
                 dcat_publisher_name = dcat_publisher.get('name')
+            elif isinstance(dcat_publisher, dict) and dcat_publisher.get('source'):
+                dcat_publisher_name = dcat_publisher.get('source')
+            else:
+                dcat_publisher_name = ''
 
             # Include/exclude dataset if from particular organizations
             if org_filter_include:
