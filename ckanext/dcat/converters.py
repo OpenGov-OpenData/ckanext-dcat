@@ -31,6 +31,8 @@ def dcat_to_ckan(dcat_dict):
     elif isinstance(dcat_publisher, dict) and dcat_publisher.get('name'):
         package_dict['extras'].append({'key': 'dcat_publisher_name', 'value': dcat_publisher.get('name')})
         package_dict['extras'].append({'key': 'dcat_publisher_email', 'value': dcat_publisher.get('mbox')})
+    elif isinstance(dcat_publisher, dict) and dcat_publisher.get('source'):
+        package_dict['extras'].append({'key': 'dcat_publisher_name', 'value': dcat_publisher.get('source')})
 
     bbox = dcat_dict.get('spatial','').split(',')
     if len(bbox) == 4:

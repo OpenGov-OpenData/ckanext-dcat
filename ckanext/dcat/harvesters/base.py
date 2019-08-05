@@ -213,9 +213,8 @@ class DCATHarvester(HarvesterBase):
                 [t for t in default_tags if t not in package_dict['tags']])
 
         # clean tags of invalid characters
-        if self.config and self.config.get('clean_tags', False):
-            tags = package_dict.get('tags', [])
-            package_dict['tags'] = self._clean_tags(tags)
+        tags = package_dict.get('tags', [])
+        package_dict['tags'] = self._clean_tags(tags)
 
         # Set default groups if needed
         default_groups = self.config.get('default_groups', [])
