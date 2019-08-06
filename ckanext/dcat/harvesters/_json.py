@@ -303,7 +303,7 @@ class DCATJSONHarvester(DCATHarvester):
         elif status == 'change':
             package_dict['id'] = harvest_object.package_id
             package_id = \
-                p.toolkit.get_action('package_update')(context, package_dict)
+                p.toolkit.get_action('package_patch')(context, package_dict)
             log.info('Updated dataset with id %s', package_id)
 
         model.Session.commit()
@@ -358,3 +358,7 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
+
+    # Add rest of existing resources to harvested dataset
+    if harvested_dataset.get('resources'):
+        harvested_dataset['resources'].extend(existing_resources_still_to_match)

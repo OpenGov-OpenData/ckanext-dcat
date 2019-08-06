@@ -1,6 +1,7 @@
 import logging
 import mimetypes
 import re
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 mimetypes.init()
@@ -14,14 +15,33 @@ def dcat_to_ckan(dcat_dict):
     package_dict['notes'] = dcat_dict.get('description')
     package_dict['url'] = dcat_dict.get('landingPage')
 
+    # Boston uses fluent for multilingual fields
+    package_dict['title_translated'] = {'en': dcat_dict.get('title')}
+    package_dict['notes_translated'] = {'en': dcat_dict.get('description')}
 
     package_dict['tags'] = []
     for keyword in dcat_dict.get('keyword', []):
         package_dict['tags'].append({'name': keyword})
 
+    package_dict['released'] = datetime.strptime(dcat_dict.get('issued'),"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d")
+    package_dict['modified'] = datetime.strptime(dcat_dict.get('modified'),"%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d")
+
+    # Default values for Boston metadata
+    # package_dict['classification'] = 'public'
+    # package_dict['open'] = 'open'
+    # package_dict['publisher'] = 'Boston Maps'
+    # package_dict['license_id'] = 'odc-pddl'
+    # package_dict['btype'] = 'geospatial'
+
+    # contactPoint = dcat_dict.get('contactPoint', {})
+    # contactPointFN = contactPoint.get('fn','Analytics Team')
+    # contactPointEmail = contactPoint.get('hasEmail','analyticsteam@boston.gov').split(':')[1]
+    contactPointFN = 'Analytics Team'
+    contactPointEmail = 'analyticsteam@boston.gov'
+    package_dict['contact_point'] = contactPointFN
+    package_dict['contact_point_email'] = contactPointEmail
+
     package_dict['extras'] = []
-    for key in ['issued', 'modified']:
-        package_dict['extras'].append({'key': 'dcat_{0}'.format(key), 'value': dcat_dict.get(key)})
 
     package_dict['extras'].append({'key': 'guid', 'value': dcat_dict.get('identifier')})
 
@@ -50,29 +70,43 @@ def dcat_to_ckan(dcat_dict):
     #})
 
     package_dict['resources'] = []
-    for distribution in dcat_dict.get('distribution', []):
-        format = ''
-        if distribution.get('format'):
-            format = distribution.get('format')
-        elif distribution.get('mediaType'):
-            ext = mimetypes.guess_extension(distribution.get('mediaType'))
-            if ext:
-                format = ext[1:]
-        resource = {
-            'name': distribution.get('title', dcat_dict.get('title')),
-            'description': distribution.get('description'),
-            'url': distribution.get('downloadURL') or distribution.get('accessURL'),
-            'format': format,
-        }
+    format_order = ['GeoJSON','CSV','KML','ZIP','Esri REST','Web page']
+    # Boston wants to first add resources in desired order
+    for format in format_order:
+        for distribution in dcat_dict.get('distribution', []):
+            if distribution.get('format') == format:
+                resource = get_resource_dict(distribution)
+                package_dict['resources'].append(resource)
 
-        if distribution.get('byteSize'):
-            try:
-                resource['size'] = int(distribution.get('byteSize'))
-            except ValueError:
-                pass
-        package_dict['resources'].append(resource)
+    # Add resources with other formats
+    for distribution in dcat_dict.get('distribution', []):
+        if distribution.get('format') not in format_order:
+            resource = get_resource_dict(distribution)
+            package_dict['resources'].append(resource)
 
     return package_dict
+
+
+def get_resource_dict(distribution):
+    format = ''
+    if distribution.get('format'):
+        format = distribution.get('format')
+    elif distribution.get('mediaType'):
+        ext = mimetypes.guess_extension(distribution.get('mediaType'))
+        if ext:
+            format = ext[1:]
+    resource = {
+        'name': distribution.get('title'),
+        'description': distribution.get('description'),
+        'url': distribution.get('downloadURL') or distribution.get('accessURL'),
+        'format': distribution.get('format'),
+    }
+    if distribution.get('byteSize'):
+        try:
+            resource['size'] = int(distribution.get('byteSize'))
+        except ValueError:
+            pass
+    return resource
 
 
 def ckan_to_dcat(package_dict):
