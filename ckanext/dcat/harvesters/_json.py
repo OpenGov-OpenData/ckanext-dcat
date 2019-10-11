@@ -306,6 +306,25 @@ class DCATJSONHarvester(DCATHarvester):
                 p.toolkit.get_action('package_update')(context, package_dict)
             log.info('Updated dataset with id %s', package_id)
 
+            # Xloader isn't triggered since resource urls do not change
+            context = {'model': model, 'session': model.Session,
+                       'user': self._get_user_name()}
+            updated_dataset = p.toolkit.get_action('package_show')(context, {'id': package_id})
+            updated_resources = updated_dataset.get('resources')
+
+            for resource in updated_resources:
+                if is_xloader_format(resource.get('format')):
+                    # Manually trigger xloader submit
+                    try:
+                        log.debug('Submitting resource {0} to be xloadered'.format(resource['id']))
+                        p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
+                    except p.toolkit.ValidationError as e:
+                        log.debug(e)
+                        pass
+                    except Exception as e:
+                        log.debug(e)
+                        pass
+
         model.Session.commit()
 
         return True
@@ -358,3 +377,21 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
+
+def is_xloader_format(resource_format):
+    # resource formats accepted by ckanext-xloader.
+    DEFAULT_FORMATS = [
+        'csv', 'application/csv',
+        'xls', 'xlsx', 'tsv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ods', 'application/vnd.oasis.opendocument.spreadsheet',
+    ]
+    xloader_formats = config.get('ckanext.xloader.formats')
+    if xloader_formats is not None:
+        xloader_formats = xloader_formats.lower().split()
+    else:
+        xloader_formats = DEFAULT_FORMATS
+    if not resource_format:
+        return False
+    return resource_format.lower() in xloader_formats
