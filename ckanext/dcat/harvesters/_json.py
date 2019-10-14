@@ -11,6 +11,11 @@ from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 from ckanext.dcat import converters
 from ckanext.dcat.harvesters.base import DCATHarvester
 
+try:
+    from ckan.common import config
+except ImportError:
+    from pylons import config
+
 log = logging.getLogger(__name__)
 
 
@@ -306,7 +311,7 @@ class DCATJSONHarvester(DCATHarvester):
                 p.toolkit.get_action('package_update')(context, package_dict)
             log.info('Updated dataset with id %s', package_id)
 
-            # Xloader isn't triggered since resource urls do not change
+            # Xloader isn't triggered since resource urls may not change
             context = {'model': model, 'session': model.Session,
                        'user': self._get_user_name()}
             updated_dataset = p.toolkit.get_action('package_show')(context, {'id': package_id})
