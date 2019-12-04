@@ -253,12 +253,20 @@ class DCATJSONHarvester(DCATHarvester):
             package_dict['name'] = \
                 self._get_package_name(harvest_object, package_dict['title'])
 
+        existing_dcat_modified = ''
+        dcat_modified = ''
+
         # copy across resource ids from the existing dataset, otherwise they'll
         # be recreated with new ids
         if status == 'change':
             existing_dataset = self._get_existing_dataset(harvest_object.guid)
             if existing_dataset:
                 copy_across_resource_ids(existing_dataset, package_dict)
+                # Get last modified date for existing dataset
+                for extra in package_dict.get('extras', {}):
+                    if extra.get('key') == 'dcat_modified':
+                        existing_dcat_modified = extra.get('value')
+                        break
 
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package
@@ -271,6 +279,12 @@ class DCATJSONHarvester(DCATHarvester):
             source_dataset = model.Package.get(harvest_object.source.id)
             if source_dataset.owner_org:
                 package_dict['owner_org'] = source_dataset.owner_org
+
+        # Get last modified date for harvested dataset
+        for extra in package_dict.get('extras', {}):
+            if extra.get('key') == 'dcat_modified':
+                dcat_modified = extra.get('value')
+                break
 
         # Flag this object as the current one
         harvest_object.current = True
@@ -320,7 +334,7 @@ class DCATJSONHarvester(DCATHarvester):
                 updated_resources = updated_dataset.get('resources')
 
                 for resource in updated_resources:
-                    if is_xloader_format(resource.get('format')):
+                    if is_xloader_format(resource.get('format')) and existing_dcat_modified != dcat_modified:
                         # Manually trigger xloader submit
                         try:
                             log.debug('Submitting resource {0} to be xloadered'.format(resource['id']))
@@ -362,6 +376,11 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
         lambda r: r['url'],  # same URL is fine if nothing else matches
     ]
 
+    datastore_fields = [
+        'datastore_active',
+        'datastore_contains_all_records_of_source_file'
+    ]
+
     for resource_identity_function in resource_identity_functions:
         # calculate the identities of the existing_resources
         existing_resource_identities = {}
@@ -383,6 +402,9 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                 matching_existing_resource = \
                     existing_resource_identities[identity]
                 resource['id'] = matching_existing_resource['id']
+                for field in datastore_fields:
+                    if matching_existing_resource.get(field):
+                        resource[field] = matching_existing_resource.get(field)
                 # make sure we don't match this existing_resource again
                 del existing_resource_identities[identity]
                 existing_resources_still_to_match.remove(
