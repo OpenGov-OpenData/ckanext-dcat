@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 
 import six
 import requests
@@ -10,33 +11,31 @@ from ckan import model
 
 from ckan.logic import ValidationError, NotFound, get_action
 from ckan.lib.helpers import json
+from ckan.lib.munge import substitute_ascii_equivalents
 
 from ckanext.harvest.harvesters import HarvesterBase
 from ckanext.harvest.model import HarvestObject
 
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 
-if p.toolkit.check_ckan_version(min_version='2.3'):
-    from ckan.lib.munge import munge_tag
-else:
-    # Fallback munge_tag for older ckan versions which don't have a decent
-    # munger
-    def _munge_to_length(string, min_length, max_length):
-        '''Pad/truncates a string'''
-        if len(string) < min_length:
-            string += '_' * (min_length - len(string))
-        if len(string) > max_length:
-            string = string[:max_length]
-        return string
-
-    def munge_tag(tag):
-        tag = substitute_ascii_equivalents(tag)
-        tag = tag.lower().strip()
-        tag = re.sub(r'[^a-zA-Z0-9\- ]', '', tag).replace(' ', '-')
-        tag = _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)
-        return tag
 
 log = logging.getLogger(__name__)
+
+
+def _munge_to_length(string, min_length, max_length):
+    '''Pad/truncates a string'''
+    if len(string) < min_length:
+        string += '_' * (min_length - len(string))
+    if len(string) > max_length:
+        string = string[:max_length]
+    return string
+
+def munge_tag(tag):
+    tag = substitute_ascii_equivalents(tag)
+    tag = tag.lower().strip()
+    tag = re.sub(r'[^a-zA-Z0-9\- ]', '', tag)
+    tag = _munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)
+    return tag
 
 
 class DCATHarvester(HarvesterBase):
