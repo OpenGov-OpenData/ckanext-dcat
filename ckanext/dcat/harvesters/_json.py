@@ -312,23 +312,6 @@ class DCATJSONHarvester(DCATHarvester):
                 package_id = p.toolkit.get_action(action)(context, package_dict)
                 log.info('%s dataset with id %s', message_status, package_id)
 
-            if status == 'change':
-                # Xloader isn't triggered since resource urls may not change
-                context = {'model': model, 'session': model.Session,
-                           'user': self._get_user_name()}
-                updated_dataset = p.toolkit.get_action('package_show')(context, {'id': package_id})
-                updated_resources = updated_dataset.get('resources')
-
-                for resource in updated_resources:
-                    if is_xloader_format(resource.get('format')):
-                        # Manually trigger xloader submit
-                        try:
-                            log.debug('Submitting resource {0} to be xloadered'.format(resource['id']))
-                            p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
-                        except Exception as e:
-                            log.debug(e)
-                            pass
-
         except Exception, e:
             dataset = json.loads(harvest_object.content)
             dataset_name = dataset.get('name', '')
@@ -362,6 +345,11 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
         lambda r: r['url'],  # same URL is fine if nothing else matches
     ]
 
+    datastore_fields = [
+        'datastore_active',
+        'datastore_contains_all_records_of_source_file'
+    ]
+
     for resource_identity_function in resource_identity_functions:
         # calculate the identities of the existing_resources
         existing_resource_identities = {}
@@ -383,27 +371,12 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                 matching_existing_resource = \
                     existing_resource_identities[identity]
                 resource['id'] = matching_existing_resource['id']
+                for field in datastore_fields:
+                    if matching_existing_resource.get(field):
+                        resource[field] = matching_existing_resource.get(field)
                 # make sure we don't match this existing_resource again
                 del existing_resource_identities[identity]
                 existing_resources_still_to_match.remove(
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
-
-def is_xloader_format(resource_format):
-    # resource formats accepted by ckanext-xloader.
-    DEFAULT_FORMATS = [
-        'csv', 'application/csv',
-        'xls', 'xlsx', 'tsv',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'ods', 'application/vnd.oasis.opendocument.spreadsheet',
-    ]
-    xloader_formats = config.get('ckanext.xloader.formats')
-    if xloader_formats is not None:
-        xloader_formats = xloader_formats.lower().split()
-    else:
-        xloader_formats = DEFAULT_FORMATS
-    if not resource_format:
-        return False
-    return resource_format.lower() in xloader_formats
