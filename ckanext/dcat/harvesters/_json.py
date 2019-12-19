@@ -253,20 +253,12 @@ class DCATJSONHarvester(DCATHarvester):
             package_dict['name'] = \
                 self._get_package_name(harvest_object, package_dict['title'])
 
-        existing_dcat_modified = ''
-        dcat_modified = ''
-
         # copy across resource ids from the existing dataset, otherwise they'll
         # be recreated with new ids
         if status == 'change':
             existing_dataset = self._get_existing_dataset(harvest_object.guid)
             if existing_dataset:
                 copy_across_resource_ids(existing_dataset, package_dict)
-                # Get last modified date for existing dataset
-                for extra in package_dict.get('extras', {}):
-                    if extra.get('key') == 'dcat_modified':
-                        existing_dcat_modified = extra.get('value')
-                        break
 
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package
@@ -279,12 +271,6 @@ class DCATJSONHarvester(DCATHarvester):
             source_dataset = model.Package.get(harvest_object.source.id)
             if source_dataset.owner_org:
                 package_dict['owner_org'] = source_dataset.owner_org
-
-        # Get last modified date for harvested dataset
-        for extra in package_dict.get('extras', {}):
-            if extra.get('key') == 'dcat_modified':
-                dcat_modified = extra.get('value')
-                break
 
         # Flag this object as the current one
         harvest_object.current = True
@@ -325,23 +311,6 @@ class DCATJSONHarvester(DCATHarvester):
 
                 package_id = p.toolkit.get_action(action)(context, package_dict)
                 log.info('%s dataset with id %s', message_status, package_id)
-
-            if status == 'change':
-                # Xloader isn't triggered since resource urls may not change
-                context = {'model': model, 'session': model.Session,
-                           'user': self._get_user_name()}
-                updated_dataset = p.toolkit.get_action('package_show')(context, {'id': package_id})
-                updated_resources = updated_dataset.get('resources')
-
-                for resource in updated_resources:
-                    if is_xloader_format(resource.get('format')) and existing_dcat_modified != dcat_modified:
-                        # Manually trigger xloader submit
-                        try:
-                            log.debug('Submitting resource {0} to be xloadered'.format(resource['id']))
-                            p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
-                        except Exception as e:
-                            log.debug(e)
-                            pass
 
         except Exception, e:
             dataset = json.loads(harvest_object.content)
@@ -411,21 +380,3 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
-
-def is_xloader_format(resource_format):
-    # resource formats accepted by ckanext-xloader.
-    DEFAULT_FORMATS = [
-        'csv', 'application/csv',
-        'xls', 'xlsx', 'tsv',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'ods', 'application/vnd.oasis.opendocument.spreadsheet',
-    ]
-    xloader_formats = config.get('ckanext.xloader.formats')
-    if xloader_formats is not None:
-        xloader_formats = xloader_formats.lower().split()
-    else:
-        xloader_formats = DEFAULT_FORMATS
-    if not resource_format:
-        return False
-    return resource_format.lower() in xloader_formats
