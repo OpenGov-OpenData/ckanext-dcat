@@ -316,7 +316,7 @@ class DCATHarvester(HarvesterBase):
                 package_dict['extras'].remove(existing_extra)
 
         if email_field:
-            contactPointEmail = contactPoint.get('hasEmail', ':').split(':')[1] or \
+            contactPointEmail = contactPoint.get('hasEmail', ':').split(':')[-1] or \
                                 contact_point_mapping.get('default_email')
             package_dict[email_field] = contactPointEmail
             # Remove from extras the email field
