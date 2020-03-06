@@ -9,7 +9,6 @@ eq_ = nose.tools.eq_
 class TestFormatFilters(object):
     @helpers.change_config('ckanext.file_filter.filter_type', 'whitelist')
     @helpers.change_config('ckanext.file_filter.whitelist', 'csv xlsx pdf')
-
     def test_get_whitelist(self):
         whitelist = converters.get_whitelist()
         eq_(len(whitelist), 3)
