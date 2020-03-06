@@ -3,6 +3,11 @@ import logging
 import mimetypes
 import re
 
+try:
+    from ckan.common import config
+except ImportError:
+    from pylons import config
+
 log = logging.getLogger(__name__)
 mimetypes.init()
 
@@ -59,6 +64,15 @@ def dcat_to_ckan(dcat_dict):
             ext = mimetypes.guess_extension(distribution.get('mediaType'))
             if ext:
                 format = ext[1:]
+
+        # skip disallowed formats
+        clean_format = ''.join(format.split()).lower()
+        if disallow_file_format(clean_format):
+            log.debug('Skip disallowed format %s: %s' % (
+                format, distribution.get('downloadURL') or distribution.get('accessURL'))
+            )
+            continue
+
         resource = {
             'name': distribution.get('title', dcat_dict.get('title')),
             'description': distribution.get('description'),
@@ -126,3 +140,36 @@ def ckan_to_dcat(package_dict):
         dcat_dict['distribution'].append(distribution)
 
     return dcat_dict
+
+
+def disallow_file_format(file_format):
+    if config.get('ckanext.format_filter.filter_type') == 'whitelist':
+        if file_format in get_whitelist():
+            return False
+        return True
+    elif config.get('ckanext.format_filter.filter_type') == 'blacklist':
+        if file_format in get_blacklist():
+            return True
+    return False
+
+
+def get_whitelist():
+    whitelist_string = config.get('ckanext.format_filter.whitelist', '')
+    return convert_to_filter_list(whitelist_string)
+
+
+def get_blacklist():
+    blacklist_string = config.get('ckanext.format_filter.blacklist', '')
+    return convert_to_filter_list(blacklist_string)
+
+
+def convert_to_filter_list(filter_string):
+    format_list = []
+    try:
+        if filter_string:
+            if isinstance(filter_string, str):
+                filter_string = filter_string.split()
+                format_list = [file_format.lower() for file_format in filter_string]
+    except Exception as e:
+        log.error(e)
+    return format_list
