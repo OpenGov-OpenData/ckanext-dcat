@@ -1,12 +1,14 @@
+import logging
+
+import ckanapi
+from ckan import plugins as p
 from pylons import config
 
-from ckan import plugins as p
 try:
     from ckan.lib.plugins import DefaultTranslation
 except ImportError:
     class DefaultTranslation():
         pass
-
 
 from ckanext.dcat.logic import (dcat_dataset_show,
                                 dcat_catalog_show,
@@ -16,6 +18,9 @@ from ckanext.dcat.logic import (dcat_dataset_show,
                                 )
 from ckanext.dcat import utils
 
+log = logging.getLogger(__name__)
+lc = ckanapi.LocalCKAN()
+
 DEFAULT_CATALOG_ENDPOINT = '/catalog.{_format}'
 CUSTOM_ENDPOINT_CONFIG = 'ckanext.dcat.catalog_endpoint'
 ENABLE_RDF_ENDPOINTS_CONFIG = 'ckanext.dcat.enable_rdf_endpoints'
@@ -24,7 +29,6 @@ TRANSLATE_KEYS_CONFIG = 'ckanext.dcat.translate_keys'
 
 
 class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
-
     p.implements(p.IConfigurer, inherit=True)
     p.implements(p.ITemplateHelpers, inherit=True)
     p.implements(p.IRoutes, inherit=True)
@@ -65,7 +69,6 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
         controller = 'ckanext.dcat.controllers:DCATController'
 
         if p.toolkit.asbool(config.get(ENABLE_RDF_ENDPOINTS_CONFIG, True)):
-
             _map.connect('dcat_catalog',
                          config.get('ckanext.dcat.catalog_endpoint',
                                     DEFAULT_CATALOG_ENDPOINT),
@@ -77,7 +80,6 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
                          requirements={'_format': 'xml|rdf|n3|ttl|jsonld'})
 
         if p.toolkit.asbool(config.get(ENABLE_CONTENT_NEGOTIATION_CONFIG)):
-
             _map.connect('home', '/', controller=controller,
                          action='read_catalog')
 
@@ -106,7 +108,6 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
 
     # IPackageController
     def after_show(self, context, data_dict):
-
         # check if config is enabled to translate keys (default: True)
         if not p.toolkit.asbool(config.get(TRANSLATE_KEYS_CONFIG, True)):
             return data_dict
@@ -132,16 +133,24 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
 
         return data_dict
 
+    def before_index(self, pkg_dict):
+        dcat_modified = pkg_dict.get('extras_dcat_modified')
+        dcat_issued = pkg_dict.get('extras_dcat_issued')
+        if dcat_modified:
+            pkg_dict['metadata_modified'] = dcat_modified
+        if dcat_modified:
+            pkg_dict['metadata_created'] = dcat_issued
+
+        return pkg_dict
+
 
 class DCATJSONInterface(p.SingletonPlugin):
-
     p.implements(p.IRoutes, inherit=True)
     p.implements(p.IActions)
     p.implements(p.IAuthFunctions, inherit=True)
 
     # IRoutes
     def after_map(self, map):
-
         controller = 'ckanext.dcat.controllers:DCATController'
         route = config.get('ckanext.dcat.json_endpoint', '/dcat.json')
         map.connect(route, controller=controller, action='dcat_json')
@@ -169,4 +178,3 @@ class StructuredDataPlugin(p.SingletonPlugin):
         return {
             'structured_data': utils.structured_data,
         }
-
