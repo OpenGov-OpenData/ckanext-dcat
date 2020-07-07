@@ -16,6 +16,7 @@ def munge_to_length(string, min_length, max_length):
         string = string[:max_length]
     return string
 
+
 def munge_tag(tag):
     tag = substitute_ascii_equivalents(tag)
     tag = tag.lower().strip()
@@ -49,7 +50,7 @@ class ResourceOrder(BaseConfigProcessor):
     @staticmethod
     def check_config(config_obj):
         if 'resources_order' in config_obj:
-            if not isinstance(config_obj['resources_order'], basestring):
+            if not isinstance(config_obj['resources_order'], list):
                 raise ValueError('Resources order should be provided as sting with')
 
     @staticmethod
@@ -57,7 +58,6 @@ class ResourceOrder(BaseConfigProcessor):
         resource_order = config_obj.get('resources_order')
         if not resource_order:
             return package_dict
-        resource_order = resource_order.split(',')
         resource_order = [res_format.strip().lower() for res_format in resource_order]
         result = OrderedDict([(res_format, []) for res_format in resource_order])
         result['not_specified_types'] = []
@@ -113,9 +113,9 @@ class CleanTags(BaseConfigProcessor):
             tags = [_update_tag(t, 'name', munge_tag(t['name'])) for t in tags if munge_tag(t['name']) != '']
 
         except TypeError:  # a TypeError is raised if `t` above is a string
-           # REST format: 'tags' is a list of strings
-           tags = [munge_tag(t) for t in tags if munge_tag(t) != '']
-           tags = list(set(tags))
+            # REST format: 'tags' is a list of strings
+            tags = [munge_tag(t) for t in tags if munge_tag(t) != '']
+            tags = list(set(tags))
 
         package_dict['tags'] = tags
 
@@ -134,7 +134,7 @@ class DefaultGroups(BaseConfigProcessor):
                 package_dict['groups'] = []
             existing_group_ids = [g['id'] for g in package_dict['groups']]
             package_dict['groups'].extend(
-                [{'name':g['name']} for g in config['default_group_dicts']
+                [{'name': g['name']} for g in config['default_group_dicts']
                  if g['id'] not in existing_group_ids])
 
     @staticmethod
@@ -165,6 +165,7 @@ class DefaultExtras(BaseConfigProcessor):
 
         # Set default extras if needed
         default_extras = config.get('default_extras', {})
+
         def get_extra(key, package_dict):
             for extra in package_dict.get('extras', []):
                 if extra['key'] == key:
@@ -266,17 +267,17 @@ class Publisher(BaseConfigProcessor):
         if 'publisher' in config_obj:
             if not isinstance(config_obj['publisher'], dict):
                 raise ValueError('publisher must be a dictionary')
-    
-    
+
+
 class ContactPoint(BaseConfigProcessor):
-    
+
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
         # set the contact point
         contact_point_mapping = config.get('contact_point', {})
         name_field = contact_point_mapping.get('name_field')
         email_field = contact_point_mapping.get('email_field')
-        contactPoint = dcat_dict.get('contactPoint',{})
+        contactPoint = dcat_dict.get('contactPoint', {})
 
         if name_field:
             contactPointName = contactPoint.get('fn') or \
@@ -295,7 +296,7 @@ class ContactPoint(BaseConfigProcessor):
             existing_extra = get_extra(email_field, package_dict)
             if existing_extra:
                 package_dict['extras'].remove(existing_extra)
-    
+
     @staticmethod
     def check_config(config_obj):
         if 'contact_point' in config_obj:
@@ -315,3 +316,14 @@ class OrganizationFilter(BaseConfigProcessor):
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
         pass
+
+
+class KeepManualAddedResourcesHarvestedDatasets(BaseConfigProcessor):
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
+
+    @staticmethod
+    def check_config(config_obj):
+        if not isinstance(config_obj.get('keep_manual_added_resources'), bool):
+            raise ValueError('keep_manual_added_resources must be boolean')

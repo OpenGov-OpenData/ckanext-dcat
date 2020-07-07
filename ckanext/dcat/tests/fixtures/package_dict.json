@@ -1,0 +1,89 @@
+{
+  "name": "zoning",
+  "tags": [
+    {
+      "name": "business and economy"
+    },
+    {
+      "name": "civic vitality and governance"
+    },
+    {
+      "name": "pittsburgh"
+    }
+  ],
+  "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0",
+  "notes": "Pittsburgh Zoning Districts",
+  "title": "Zoning",
+  "extras": [
+    {
+      "value": "2018-03-20T16:50:52.000Z",
+      "key": "dcat_issued"
+    },
+    {
+      "value": "2019-12-02T17:54:31.850Z",
+      "key": "dcat_modified"
+    },
+    {
+      "value": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0",
+      "key": "guid"
+    },
+    {
+      "value": "City of Pittsburgh",
+      "key": "dcat_publisher_name"
+    },
+    {
+      "value": null,
+      "key": "dcat_publisher_email"
+    },
+    {
+      "value": "{\"type\": \"Polygon\", \"coordinates\": [[[-80.09678935319313,40.35800842842033],[-80.09678935319313,40.5036834801964],[-79.86284825304872,40.5036834801964],[-79.86284825304872,40.35800842842033],[-80.09678935319313,40.35800842842033]]]}",
+      "key": "spatial"
+    }
+  ],
+  "resources": [
+    {
+      "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0",
+      "id": "9e11175c-f556-4e14-ad0a-1990eb8c769a",
+      "format": "Web page",
+      "name": "ArcGIS Open Dataset",
+      "description": null
+    },
+    {
+      "url": "https://services1.arcgis.com/YZCmUqbcsUpOKfj7/arcgis/rest/services/PGHWebZoning/FeatureServer/0",
+      "id": "41644507-c485-4282-b079-20942413c558",
+      "format": "Esri REST",
+      "name": "Esri Rest API",
+      "description": null
+    },
+    {
+      "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0.geojson",
+      "id": "42c8073c-43fb-4a4d-871c-93fcdc1ca226",
+      "format": "GeoJSON",
+      "name": "GeoJSON",
+      "description": null
+    },
+    {
+      "name": "CSV",
+      "format": "CSV",
+      "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0.csv",
+      "datastore_contains_all_records_of_source_file": true,
+      "datastore_active": true,
+      "id": "ad1e44f7-ecc3-4816-9946-6bf68d5dabfb",
+      "description": null
+    },
+    {
+      "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0.kml",
+      "id": "fae2a710-8697-4406-a602-616e2000e407",
+      "format": "KML",
+      "name": "KML",
+      "description": null
+    },
+    {
+      "url": "http://pghgis-pittsburghpa.opendata.arcgis.com/datasets/e67592c2904b497b83ccf876fced7979_0.zip",
+      "id": "25426e3f-76a2-4768-b0a4-d806f09e8710",
+      "format": "ZIP",
+      "name": "Shapefile",
+      "description": null
+    }
+  ]
+}
