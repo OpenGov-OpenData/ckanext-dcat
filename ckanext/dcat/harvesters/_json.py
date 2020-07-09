@@ -12,10 +12,6 @@ from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 from ckanext.dcat import converters
 from ckanext.dcat.harvesters.base import DCATHarvester
 
-try:
-    from ckan.common import config
-except ImportError:
-    from pylons import config
 
 log = logging.getLogger(__name__)
 
@@ -328,7 +324,8 @@ class DCATJSONHarvester(DCATHarvester):
 
         return True
 
-def copy_across_resource_ids(existing_dataset, harvested_dataset, config):
+
+def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
     '''Compare the resources in a dataset existing in the CKAN database with
     the resources in a freshly harvested copy, and for any resources that are
     the same, copy the resource ID into the harvested_dataset dict.
@@ -385,6 +382,7 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config):
         if not existing_resources_still_to_match:
             break
 
+    config = config if config is not None else {}
     if config.get('keep_manual_added_resources', False):
         # Add rest of existing resources to harvested dataset
         if harvested_dataset.get('resources'):
