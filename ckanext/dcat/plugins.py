@@ -1,6 +1,3 @@
-import logging
-
-import ckanapi
 from ckan import plugins as p
 from pylons import config
 
@@ -17,9 +14,6 @@ from ckanext.dcat.logic import (dcat_dataset_show,
                                 dcat_auth,
                                 )
 from ckanext.dcat import utils
-
-log = logging.getLogger(__name__)
-lc = ckanapi.LocalCKAN()
 
 DEFAULT_CATALOG_ENDPOINT = '/catalog.{_format}'
 CUSTOM_ENDPOINT_CONFIG = 'ckanext.dcat.catalog_endpoint'
