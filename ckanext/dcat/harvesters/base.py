@@ -44,7 +44,7 @@ class DCATHarvester(HarvesterBase):
     force_import = False
 
     config = None
-    processors = [
+    config_processors = [
         DefaultTags,
         CleanTags,
         DefaultGroups,
@@ -213,7 +213,7 @@ class DCATHarvester(HarvesterBase):
         config_str = harvest_object.job.source.config
         self.config = json.loads(config_str) if config_str else {}
 
-        for processor in self.processors:
+        for processor in self.config_processors:
             processor.modify_package_dict(package_dict, self.config, dcat_dict)
 
         return package_dict
@@ -232,7 +232,7 @@ class DCATHarvester(HarvesterBase):
         config_obj = json.loads(config)
 
         # Processors validators could change config object. At least DefaultGroups
-        for processor in self.processors:
+        for processor in self.config_processors:
             processor.check_config(config_obj)
 
         config = json.dumps(config_obj, indent=4)

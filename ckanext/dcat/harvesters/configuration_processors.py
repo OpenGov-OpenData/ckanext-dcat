@@ -51,7 +51,7 @@ class ResourceOrder(BaseConfigProcessor):
     def check_config(config_obj):
         if 'resources_order' in config_obj:
             if not isinstance(config_obj['resources_order'], list):
-                raise ValueError('Resources order should be provided as sting with')
+                raise ValueError('Resource order should be provided as a list of strings')
 
     @staticmethod
     def modify_package_dict(package_dict, config_obj, dcat_dict):
