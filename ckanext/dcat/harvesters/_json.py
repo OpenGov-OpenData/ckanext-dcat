@@ -383,7 +383,7 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
             break
 
     config = config if config is not None else {}
-    if config.get('keep_manual_added_resources', False):
+    if config.get('keep_existing_resources', False):
         # Add rest of existing resources to harvested dataset
         if harvested_dataset.get('resources'):
             harvested_dataset['resources'].extend(existing_resources_still_to_match)

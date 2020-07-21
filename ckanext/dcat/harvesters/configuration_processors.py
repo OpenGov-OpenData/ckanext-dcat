@@ -325,5 +325,5 @@ class KeepManualAddedResourcesHarvestedDatasets(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
-        if not isinstance(config_obj.get('keep_manual_added_resources'), bool):
-            raise ValueError('keep_manual_added_resources must be boolean')
+        if not isinstance(config_obj.get('keep_existing_resources'), bool):
+            raise ValueError('keep_existing_resources must be boolean')

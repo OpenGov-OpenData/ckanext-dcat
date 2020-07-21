@@ -278,7 +278,7 @@ class TestCopyAcrossResourceIds:
         copy_across_resource_ids(
             existing_dataset=existing_dataset,
             harvested_dataset=harvested_dataset,
-            config={"keep_manual_added_resources": True}
+            config={"keep_existing_resources": True}
         )
         assert_equal(len(existing_dataset['resources']), len(harvested_dataset['resources']))
 
