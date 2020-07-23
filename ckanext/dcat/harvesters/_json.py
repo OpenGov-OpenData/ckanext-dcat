@@ -12,12 +12,12 @@ from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 from ckanext.dcat import converters
 from ckanext.dcat.harvesters.base import DCATHarvester
 
-try:
-    from ckan.common import config
-except ImportError:
-    from pylons import config
 
 log = logging.getLogger(__name__)
+
+
+def convert_string_bool_to_bool(value):
+    return value in ['True', 'true', True]
 
 
 class DCATJSONHarvester(DCATHarvester):
@@ -207,6 +207,8 @@ class DCATJSONHarvester(DCATHarvester):
         if not harvest_object:
             log.error('No harvest object received')
             return False
+        config_str = harvest_object.job.source.config
+        config = json.loads(config_str) if config_str else {}
 
         if self.force_import:
             status = 'change'
@@ -260,7 +262,7 @@ class DCATJSONHarvester(DCATHarvester):
         if status == 'change':
             existing_dataset = self._get_existing_dataset(harvest_object.guid)
             if existing_dataset:
-                copy_across_resource_ids(existing_dataset, package_dict)
+                copy_across_resource_ids(existing_dataset, package_dict, config)
 
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package
@@ -326,7 +328,8 @@ class DCATJSONHarvester(DCATHarvester):
 
         return True
 
-def copy_across_resource_ids(existing_dataset, harvested_dataset):
+
+def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
     '''Compare the resources in a dataset existing in the CKAN database with
     the resources in a freshly harvested copy, and for any resources that are
     the same, copy the resource ID into the harvested_dataset dict.
@@ -382,3 +385,11 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
+
+    config = config if config is not None else {}
+    keep_existing_resources = config.get('keep_existing_resources', False)
+    keep_existing_resources = convert_string_bool_to_bool(keep_existing_resources)
+    if keep_existing_resources:
+        # Add rest of existing resources to harvested dataset
+        if harvested_dataset.get('resources'):
+            harvested_dataset['resources'].extend(existing_resources_still_to_match)
