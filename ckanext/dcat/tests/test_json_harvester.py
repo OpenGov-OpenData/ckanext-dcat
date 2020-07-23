@@ -1,12 +1,13 @@
 import httpretty
 from mock import call, patch, Mock
-
+import copy
 import nose
 
 from ckan.logic import ValidationError
 import ckantoolkit.tests.helpers as h
 
 import ckan.tests.factories as factories
+from nose.tools import assert_equal
 
 from ckanext.dcat.harvesters._json import copy_across_resource_ids, DCATJSONHarvester
 from test_harvester import FunctionalHarvestTest
@@ -62,8 +63,26 @@ class TestCopyAcrossResourceIds:
             harvested_dataset,
         )
         eq_([(r.get('id'), r['title']) for r in harvested_dataset['resources']],
+
             [('1', 'link1'), ('5', 'link5'), ('3', 'link3'), ('2', 'link2'),
              ('4', 'link4'), (None, 'link new')])
+
+    def test_copied_with_manually_added_resources(self):
+        harvested_dataset = {'resources': [
+            {'url': 'http://abc1', 'title': 'link1', 'id': 'id1'},
+            {'url': 'http://abc5', 'title': 'link5', 'id': 'id2'},
+            {'url': 'http://abc3', 'title': 'link3', 'id': 'id3'},
+            {'url': 'http://abc2', 'title': 'link2', 'id': 'id4'},
+            {'url': 'http://abc4', 'title': 'link4', 'id': 'id5'},
+        ]}
+        existing_dataset = copy.deepcopy(harvested_dataset)
+        existing_dataset['resources'].append({'url': 'http://abc_new', 'title': 'link_new'})
+        copy_across_resource_ids(
+            existing_dataset=existing_dataset,
+            harvested_dataset=harvested_dataset,
+            config={"keep_existing_resources": True}
+        )
+        assert_equal(len(existing_dataset['resources']), len(harvested_dataset['resources']))
 
     def test_not_copied_because_completely_different(self):
         harvested_dataset = {'resources': [
