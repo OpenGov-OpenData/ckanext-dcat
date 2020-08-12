@@ -1,6 +1,9 @@
 from ckan import plugins as p
 from pylons import config
 import dateutil
+import re
+
+from ckanext.dcat.utils import check_if_date_is_iso_format
 
 try:
     from ckan.lib.plugins import DefaultTranslation
@@ -129,21 +132,13 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
         return data_dict
 
     def before_index(self, pkg_dict):
-
         dcat_modified = pkg_dict.get('extras_dcat_modified')
         dcat_issued = pkg_dict.get('extras_dcat_issued')
-        try:
-            if dcat_modified:
-                dateutil.parser.parse(dcat_modified)
-            if dcat_issued:
-                dateutil.parser.parse(dcat_issued)
-        except ValueError:
-            return pkg_dict
-        else:
-            if dcat_modified:
-                pkg_dict['metadata_modified'] = dcat_modified
-            if dcat_modified:
-                pkg_dict['metadata_created'] = dcat_issued
+
+        if dcat_modified and check_if_date_is_iso_format(dcat_modified):
+            pkg_dict['metadata_modified'] = dcat_modified
+        if dcat_modified and check_if_date_is_iso_format(dcat_modified):
+            pkg_dict['metadata_created'] = dcat_issued
 
         return pkg_dict
 
