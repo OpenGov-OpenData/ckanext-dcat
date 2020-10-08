@@ -1,7 +1,5 @@
 from ckan import plugins as p
 from pylons import config
-import dateutil
-import re
 
 from ckanext.dcat.utils import parse_date_iso_format
 
