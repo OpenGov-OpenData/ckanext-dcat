@@ -1,6 +1,7 @@
 import nose
 
 from ckanext.dcat.utils import parse_accept_header
+from ckanext.dcat.utils import parse_date_iso_format
 
 eq_ = nose.tools.eq_
 
@@ -126,3 +127,21 @@ class TestAcceptHeaders(object):
         _format = parse_accept_header(header)
 
         eq_(_format, None)
+
+
+class TestDateIsoFormat(object):
+
+    def test_empty(self):
+        date = ''
+        _date = parse_date_iso_format(date)
+        eq_(_date, None)
+
+    def test_date(self):
+        date = '2020-07-07'
+        _date = parse_date_iso_format(date)
+        eq_(_date, '2020-07-07T00:00:00')
+
+    def test_datetime(self):
+        date = '2020-07-07T20:15:59.642761'
+        _date = parse_date_iso_format(date)
+        eq_(_date, '2020-07-07T20:15:59.642761')

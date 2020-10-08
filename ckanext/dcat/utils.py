@@ -1,6 +1,8 @@
 import logging
 import uuid
 import json
+import datetime
+from dateutil.parser import parse as parse_date
 
 from ckantoolkit import config, h
 
@@ -289,10 +291,6 @@ import operator
 accept_re = re.compile("^(?P<ct>[^;]+)[ \t]*(;[ \t]*q=(?P<q>[0-9.]+)){0,1}$")
 
 
-def check_if_date_is_iso_format(date):
-    pattern = '^([0-9]{4})-([0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z)$'
-    return re.findall(pattern, date)
-
 def parse_accept_header(accept_header=''):
     '''
     Parses the supplied accept header and tries to determine
@@ -341,3 +339,16 @@ def parse_accept_header(accept_header=''):
                 return accepted_media_types_wildcard[_type]
 
     return None
+
+
+def parse_date_iso_format(date):
+    '''
+    Parses the supplied date and tries to return it as a string in iso format
+    '''
+    try:
+        date = date.replace('Z', '')
+        default_datetime = datetime.datetime(2000, 1, 1, 0, 0, 0)
+        _date = parse_date(date, default=default_datetime)
+        return _date.isoformat()
+    except:
+        return None
