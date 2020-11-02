@@ -1,6 +1,8 @@
 from ckan import plugins as p
 from pylons import config
 
+from ckanext.dcat.utils import parse_date_iso_format
+
 try:
     from ckan.lib.plugins import DefaultTranslation
 except ImportError:
@@ -128,11 +130,12 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
         return data_dict
 
     def before_index(self, pkg_dict):
-        dcat_modified = pkg_dict.get('extras_dcat_modified')
-        dcat_issued = pkg_dict.get('extras_dcat_issued')
+        dcat_modified = parse_date_iso_format(pkg_dict.get('extras_dcat_modified'))
         if dcat_modified:
             pkg_dict['metadata_modified'] = dcat_modified
-        if dcat_modified:
+
+        dcat_issued = parse_date_iso_format(pkg_dict.get('extras_dcat_issued'))
+        if dcat_issued:
             pkg_dict['metadata_created'] = dcat_issued
 
         return pkg_dict

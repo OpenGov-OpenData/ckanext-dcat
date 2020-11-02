@@ -188,11 +188,11 @@ class DCATHarvester(HarvesterBase):
         '''
 
         datasets = model.Session.query(model.Package.id) \
-            .join(model.PackageExtra) \
-            .filter(model.PackageExtra.key == 'guid') \
-            .filter(model.PackageExtra.value == guid) \
-            .filter(model.Package.state == 'active') \
-            .all()
+                                .join(model.PackageExtra) \
+                                .filter(model.PackageExtra.key == 'guid') \
+                                .filter(model.PackageExtra.value == guid) \
+                                .filter(model.Package.state == 'active') \
+                                .all()
 
         if not datasets:
             return None
