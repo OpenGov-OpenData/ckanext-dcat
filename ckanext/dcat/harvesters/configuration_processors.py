@@ -45,36 +45,16 @@ class BaseConfigProcessor:
         raise NotImplementedError
 
 
-class ResourceOrder(BaseConfigProcessor):
+class DefaultTags(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
-        if 'resources_order' in config_obj:
-            if not isinstance(config_obj['resources_order'], list):
-                raise ValueError('Resource order should be provided as a list of strings')
-
-    @staticmethod
-    def modify_package_dict(package_dict, config_obj, dcat_dict):
-        resource_order = config_obj.get('resources_order')
-        if not resource_order:
-            return package_dict
-        resource_order = [res_format.strip().lower() for res_format in resource_order]
-        result = OrderedDict([(res_format, []) for res_format in resource_order])
-        result['not_specified_types'] = []
-
-        for resource in package_dict['resources']:
-            res_format = resource.get('format', '').strip().lower()
-            if res_format not in resource_order:
-                result['not_specified_types'].append(resource)
-                continue
-            result[res_format].append(resource)
-
-        package_dict['resources'] = []
-        for val in result.values():
-            package_dict['resources'] += val
-
-
-class DefaultTags(BaseConfigProcessor):
+        if 'default_tags' in config_obj:
+            if not isinstance(config_obj['default_tags'], list):
+                raise ValueError('default_tags must be a list')
+            if config_obj['default_tags'] and \
+                    not isinstance(config_obj['default_tags'][0], dict):
+                raise ValueError('default_tags must be a list of dictionaries')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -86,17 +66,12 @@ class DefaultTags(BaseConfigProcessor):
             package_dict['tags'].extend(
                 [t for t in default_tags if t not in package_dict['tags']])
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'default_tags' in config_obj:
-            if not isinstance(config_obj['default_tags'], list):
-                raise ValueError('default_tags must be a list')
-            if config_obj['default_tags'] and \
-                    not isinstance(config_obj['default_tags'][0], dict):
-                raise ValueError('default_tags must be a list of dictionaries')
-
 
 class CleanTags(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        pass
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -119,23 +94,8 @@ class CleanTags(BaseConfigProcessor):
 
         package_dict['tags'] = tags
 
-    @staticmethod
-    def check_config(config_obj):
-        pass
-
 
 class DefaultGroups(BaseConfigProcessor):
-
-    @staticmethod
-    def modify_package_dict(package_dict, config, dcat_dict):
-        default_groups = config.get('default_groups', [])
-        if default_groups:
-            if not 'groups' in package_dict:
-                package_dict['groups'] = []
-            existing_group_ids = [g['id'] for g in package_dict['groups']]
-            package_dict['groups'].extend(
-                [{'name': g['name']} for g in config['default_group_dicts']
-                 if g['id'] not in existing_group_ids])
 
     @staticmethod
     def check_config(config_obj):
@@ -157,8 +117,25 @@ class DefaultGroups(BaseConfigProcessor):
                 except NotFound, e:
                     raise ValueError('Default group not found')
 
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        default_groups = config.get('default_groups', [])
+        if default_groups:
+            if not 'groups' in package_dict:
+                package_dict['groups'] = []
+            existing_group_ids = [g['id'] for g in package_dict['groups']]
+            package_dict['groups'].extend(
+                [{'name': g['name']} for g in config['default_group_dicts']
+                 if g['id'] not in existing_group_ids])
+
 
 class DefaultExtras(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'default_extras' in config_obj:
+            if not isinstance(config_obj['default_extras'], dict):
+                raise ValueError('default_extras must be a dictionary')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -185,14 +162,16 @@ class DefaultExtras(BaseConfigProcessor):
 
                 package_dict['extras'].append({'key': key, 'value': value})
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'default_extras' in config_obj:
-            if not isinstance(config_obj['default_extras'], dict):
-                raise ValueError('default_extras must be a dictionary')
-
 
 class DefaultValues(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'default_values' in config_obj:
+            if not isinstance(config_obj['default_values'], list):
+                raise ValueError('default_values must be a *list* of dictionaries')
+            if config_obj['default_values'] and not isinstance(config_obj['default_values'][0], dict):
+                raise ValueError('default_values must be a *list* of dictionaries')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -207,16 +186,18 @@ class DefaultValues(BaseConfigProcessor):
                     if existing_extra:
                         package_dict['extras'].remove(existing_extra)
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'default_values' in config_obj:
-            if not isinstance(config_obj['default_values'], list):
-                raise ValueError('default_values must be a *list* of dictionaries')
-            if config_obj['default_values'] and not isinstance(config_obj['default_values'][0], dict):
-                raise ValueError('default_values must be a *list* of dictionaries')
+
 
 
 class MappingFields(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'map_fields' in config_obj:
+            if not isinstance(config_obj['map_fields'], list):
+                raise ValueError('map_fields must be a *list* of dictionaries')
+            if config_obj['map_fields'] and not isinstance(config_obj['map_fields'][0], dict):
+                raise ValueError('map_fields must be a *list* of dictionaries')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -237,16 +218,14 @@ class MappingFields(BaseConfigProcessor):
                 if existing_extra:
                     package_dict['extras'].remove(existing_extra)
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'map_fields' in config_obj:
-            if not isinstance(config_obj['map_fields'], list):
-                raise ValueError('map_fields must be a *list* of dictionaries')
-            if config_obj['map_fields'] and not isinstance(config_obj['map_fields'][0], dict):
-                raise ValueError('map_fields must be a *list* of dictionaries')
-
 
 class Publisher(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'publisher' in config_obj:
+            if not isinstance(config_obj['publisher'], dict):
+                raise ValueError('publisher must be a dictionary')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -262,14 +241,14 @@ class Publisher(BaseConfigProcessor):
             if existing_extra:
                 package_dict['extras'].remove(existing_extra)
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'publisher' in config_obj:
-            if not isinstance(config_obj['publisher'], dict):
-                raise ValueError('publisher must be a dictionary')
-
 
 class ContactPoint(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'contact_point' in config_obj:
+            if not isinstance(config_obj['contact_point'], dict):
+                raise ValueError('contact_point must be a dictionary')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -297,12 +276,6 @@ class ContactPoint(BaseConfigProcessor):
             if existing_extra:
                 package_dict['extras'].remove(existing_extra)
 
-    @staticmethod
-    def check_config(config_obj):
-        if 'contact_point' in config_obj:
-            if not isinstance(config_obj['contact_point'], dict):
-                raise ValueError('contact_point must be a dictionary')
-
 
 class OrganizationFilter(BaseConfigProcessor):
 
@@ -318,12 +291,45 @@ class OrganizationFilter(BaseConfigProcessor):
         pass
 
 
-class KeepManualAddedResourcesHarvestedDatasets(BaseConfigProcessor):
+class ResourceFormatOrder(BaseConfigProcessor):
+
     @staticmethod
-    def modify_package_dict(package_dict, config, dcat_dict):
-        pass
+    def check_config(config_obj):
+        if 'resource_format_order' in config_obj:
+            if not isinstance(config_obj['resource_format_order'], list):
+                raise ValueError('Resource format order should be provided as a list of strings')
+
+    @staticmethod
+    def modify_package_dict(package_dict, config_obj, dcat_dict):
+        resource_order = config_obj.get('resource_format_order')
+        if not resource_order:
+            return package_dict
+        resource_order = [res_format.strip().lower() for res_format in resource_order]
+
+        # create OrderedDict to group resources by format
+        result = OrderedDict([(res_format, []) for res_format in resource_order])
+        result['unspecified_format'] = []
+
+        for resource in package_dict['resources']:
+            res_format = resource.get('format', '').strip().lower()
+            if res_format not in resource_order:
+                result['unspecified_format'].append(resource)
+                continue
+            result[res_format].append(resource)
+
+        # add resources by format order, unspecified formats appear at the end
+        package_dict['resources'] = []
+        for val in result.values():
+            package_dict['resources'] += val
+
+
+class KeepExistingResources(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
         if not isinstance(config_obj.get('keep_existing_resources'), bool):
             raise ValueError('keep_existing_resources must be boolean')
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass

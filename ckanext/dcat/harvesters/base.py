@@ -9,10 +9,12 @@ from ckan import plugins as p
 from ckan.lib.helpers import json
 from ckan.lib.munge import substitute_ascii_equivalents
 from ckanext.dcat.harvesters.configuration_processors import (
-    ResourceOrder, ContactPoint,
-    DefaultTags, Publisher, CleanTags,
-    DefaultExtras, DefaultGroups, DefaultValues,
-    MappingFields, OrganizationFilter)
+    DefaultTags, CleanTags,
+    DefaultGroups, DefaultExtras, DefaultValues,
+    MappingFields, Publisher, ContactPoint,
+    OrganizationFilter,
+    ResourceFormatOrder,
+    KeepExistingResources)
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 from ckanext.harvest.harvesters import HarvesterBase
 from ckanext.harvest.model import HarvestObject
@@ -53,8 +55,9 @@ class DCATHarvester(HarvesterBase):
         MappingFields,
         Publisher,
         ContactPoint,
-        ResourceOrder,
-        OrganizationFilter
+        OrganizationFilter,
+        ResourceFormatOrder,
+        KeepExistingResources
     ]
 
     def _get_content_and_type(self, url, harvest_job, page=1,
