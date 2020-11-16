@@ -3,7 +3,6 @@ import uuid
 import json
 import datetime
 from dateutil.parser import parse as parse_date
-from dateutil.parser import ParserError
 
 from ckantoolkit import config, h
 
@@ -351,5 +350,5 @@ def parse_date_iso_format(date):
         default_datetime = datetime.datetime(2000, 1, 1, 0, 0, 0)
         _date = parse_date(date, default=default_datetime)
         return _date.isoformat()
-    except (AttributeError, ParserError):
+    except (AttributeError, ValueError):
         return None
