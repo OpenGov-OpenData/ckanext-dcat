@@ -1,7 +1,7 @@
 import json
 import os
 
-from ckanext.dcat.harvesters.configuration_processors import ResourceOrder
+from ckanext.dcat.harvesters.configuration_processors import ResourceFormatOrder
 from nose.tools import assert_raises, assert_equal, assert_dict_equal, assert_list_equal
 
 fixtures_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
@@ -19,21 +19,21 @@ def get_dcat_config():
     return result
 
 
-class TestResourceOrder:
+class TestResourceFormatOrder:
 
     @classmethod
     def setup_class(cls):
-        cls.processor = ResourceOrder
+        cls.processor = ResourceFormatOrder
 
     def test_validation_correct_format(self):
         config = {
-            "resources_order": ["CSV", "ZIP"]
+            "resource_format_order": ["CSV", "ZIP"]
         }
         self.processor.check_config(config)
 
     def test_validation_incorrect_format(self):
         config = {
-            "resources_order": "csv zip"
+            "resource_format_order": "csv zip"
         }
         with assert_raises(ValueError):
             self.processor.check_config(config)
@@ -42,13 +42,13 @@ class TestResourceOrder:
         package = get_package_dict()
         dcat_config = {}
         config = {
-            "resources_order": ["CSV", "ZIP"]
+            "resource_format_order": ["CSV", "ZIP"]
         }
         resources_before = package['resources'][:]
         self.processor.modify_package_dict(package, config, dcat_config)
         resources_after = package['resources'][:]
 
-        resource_order = [f.strip().lower() for f in config["resources_order"]]
+        resource_order = [f.strip().lower() for f in config["resource_format_order"]]
         step = 0
         # Check that reordering resources
         for i, res_format in enumerate(resource_order):
@@ -66,7 +66,7 @@ class TestResourceOrder:
                 step += 1
         # assert_equal(resources_after[0], resources_before[0])
 
-    def test_modify_package_unnchangable(self):
+    def test_modify_package_unchanged(self):
         package = get_package_dict()
         resources_before = package['resources'][:]
         self.processor.modify_package_dict(package_dict=package, config_obj={}, dcat_dict={})
