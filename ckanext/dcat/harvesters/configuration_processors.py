@@ -327,8 +327,9 @@ class KeepExistingResources(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
-        if not isinstance(config_obj.get('keep_existing_resources'), bool):
-            raise ValueError('keep_existing_resources must be boolean')
+        if 'keep_existing_resources' in config_obj:
+            if not isinstance(config_obj.get('keep_existing_resources'), bool):
+                raise ValueError('keep_existing_resources must be boolean')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
