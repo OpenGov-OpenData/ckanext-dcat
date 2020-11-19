@@ -10,19 +10,6 @@ from ckanext.dcat.harvesters.configuration_processors import (
     KeepExistingResources)
 from nose.tools import assert_raises, assert_equal, assert_dict_equal, assert_list_equal
 
-fixtures_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures')
-
-
-def get_package_dict():
-    with open(os.path.join(fixtures_path, 'package_dict.json'), 'r') as f:
-        result = json.load(f)
-    return result
-
-
-def get_dcat_dict():
-    with open(os.path.join(fixtures_path, 'package_dict.json'), 'r') as f:
-        result = json.load(f)
-    return result
 
 
 class TestDefaultTags:
@@ -418,29 +405,53 @@ class TestResourceFormatOrder:
             self.processor.check_config(config)
 
     def test_modify_package_resource_format_order(self):
-        package = get_package_dict()
-        dcat_dict = {}
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "resources": [
+                {
+                    "name": "Web Resource",
+                    "format": "HTML"
+                },
+                {
+                    "name": "GeoJSON Resource",
+                    "format": "GeoJSON"
+                },
+                {
+                    "name": "CSV Resource",
+                    "format": "CSV"
+                },
+                {
+                    "name": "ZIP Resource",
+                    "format": "ZIP"
+                }
+            ]
+        }
         config = {
             "resource_format_order": ["CSV", "ZIP"]
         }
-        resources_before = package['resources'][:]
+        dcat_dict = {}
+
         self.processor.modify_package_dict(package, config, dcat_dict)
-        resources_after = package['resources'][:]
 
-        resource_order = [f.strip().lower() for f in config["resource_format_order"]]
-        step = 0
-        # Check that reordering resources
-        for i, res_format in enumerate(resource_order):
-            for res in resources_before:
-                step_res_format = res.get('format', '').strip().lower()
-                if res_format == step_res_format:
-                    assert_equal(resources_after[step], res)
-                    step += 1
+        res_formats = [res_dict["format"] for res_dict in package["resources"]]
+        assert_equal(res_formats, ["CSV", "ZIP", "HTML", "GeoJSON"])
 
-        # Check all other types of resources
-        for res in resources_before:
-            step_res_format = res.get('format', '').strip().lower()
-            if step_res_format not in resource_order:
-                assert_equal(resources_after[step], res)
-                step += 1
-        # assert_equal(resources_after[0], resources_before[0])
+
+class TestKeepExistingResources:
+    @classmethod
+    def setup_class(cls):
+        cls.processor = KeepExistingResources
+
+    def test_validation_correct_format(self):
+        config = {
+            "keep_existing_resources": True
+        }
+        self.processor.check_config(config)
+
+    def test_validation_wrong_format(self):
+        config = {
+            "keep_existing_resources": "true"
+        }
+        with assert_raises(ValueError):
+            self.processor.check_config(config)
