@@ -7,6 +7,8 @@ import json
 import re
 import operator
 
+import datetime
+from dateutil.parser import parse as parse_date
 
 from ckantoolkit import config, h
 
@@ -495,3 +497,20 @@ def get_endpoint(_type='dataset'):
         return 'dcat.read_dataset' if _type == 'dataset' else 'dcat.read_catalog'
     else:
         return 'dcat_dataset' if _type == 'dataset' else 'dcat_catalog'
+
+
+def parse_date_iso_format(date):
+    '''
+    Parses the supplied date and tries to return it as a string in iso format
+    '''
+    if not date:
+        return None
+    try:
+        default_datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
+        _date = parse_date(date, default=default_datetime)
+        date_modified = _date.isoformat()
+        # solr stores less precise datetime, truncate to 19 charactors
+        return date_modified[:19]
+    except Exception:
+        pass
+    return None

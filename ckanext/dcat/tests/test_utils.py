@@ -1,4 +1,5 @@
 from ckanext.dcat.utils import parse_accept_header
+from ckanext.dcat.utils import parse_date_iso_format
 
 
 def test_accept_header_empty():
@@ -120,3 +121,36 @@ def test_accept_header_html_multiple():
     _format = parse_accept_header(header)
 
     assert _format is None
+
+
+class TestDateIsoFormat(object):
+
+    def test_empty(self):
+        date = ''
+        _date = parse_date_iso_format(date)
+        assert _date is None
+
+    def test_date_command(self):
+        date = 'Thu Sep 25 10:36:28 2020'
+        _date = parse_date_iso_format(date)
+        assert _date == '2020-09-25T10:36:28'
+
+    def test_iso_datetime(self):
+        date = '2020-02-27T21:26:01.123456'
+        _date = parse_date_iso_format(date)
+        assert _date == '2020-02-27T21:26:01'
+
+    def test_iso_date(self):
+        date = '2020-09-25'
+        _date = parse_date_iso_format(date)
+        assert _date == '2020-09-25T00:00:00'
+
+    def test_iso_datetime_stripped(self):
+        date = '20200925T104941'
+        _date = parse_date_iso_format(date)
+        assert _date == '2020-09-25T10:49:41'
+
+    def test_date_with_slash(self):
+        date = '2020/09/25'
+        _date = parse_date_iso_format(date)
+        assert _date == '2020-09-25T00:00:00'

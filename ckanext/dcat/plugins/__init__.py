@@ -130,6 +130,17 @@ class DCATPlugin(MixinDCATPlugin, p.SingletonPlugin, DefaultTranslation):
 
         return data_dict
 
+    def before_index(self, pkg_dict):
+        dcat_modified = utils.parse_date_iso_format(pkg_dict.get('extras_dcat_modified'))
+        if dcat_modified:
+            pkg_dict['metadata_modified'] = dcat_modified
+
+        dcat_issued = utils.parse_date_iso_format(pkg_dict.get('extras_dcat_issued'))
+        if dcat_issued:
+            pkg_dict['metadata_created'] = dcat_issued
+
+        return pkg_dict
+
 
 class DCATJSONInterface(MixinDCATJSONInterface, p.SingletonPlugin):
     p.implements(p.IActions)
