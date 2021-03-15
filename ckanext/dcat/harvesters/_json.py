@@ -206,6 +206,8 @@ class DCATJSONHarvester(DCATHarvester):
             log.error('No harvest object received')
             return False
 
+        self._set_config(harvest_object.job.source.config)
+
         if self.force_import:
             status = 'change'
         else:
@@ -258,7 +260,7 @@ class DCATJSONHarvester(DCATHarvester):
         if status == 'change':
             existing_dataset = self._get_existing_dataset(harvest_object.guid)
             if existing_dataset:
-                copy_across_resource_ids(existing_dataset, package_dict)
+                copy_across_resource_ids(existing_dataset, package_dict, self.config)
 
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package
@@ -324,7 +326,7 @@ class DCATJSONHarvester(DCATHarvester):
 
         return True
 
-def copy_across_resource_ids(existing_dataset, harvested_dataset):
+def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
     '''Compare the resources in a dataset existing in the CKAN database with
     the resources in a freshly harvested copy, and for any resources that are
     the same, copy the resource ID into the harvested_dataset dict.
@@ -343,6 +345,11 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
         lambda r: (r['url'], r['title'], r['format']),
         lambda r: (r['url'], r['title']),
         lambda r: r['url'],  # same URL is fine if nothing else matches
+    ]
+
+    datastore_fields = [
+        'datastore_active',
+        'datastore_contains_all_records_of_source_file'
     ]
 
     for resource_identity_function in resource_identity_functions:
@@ -366,9 +373,23 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset):
                 matching_existing_resource = \
                     existing_resource_identities[identity]
                 resource['id'] = matching_existing_resource['id']
+                # copy datastore specific fields
+                for field in datastore_fields:
+                    if matching_existing_resource.get(field):
+                        resource[field] = matching_existing_resource.get(field)
                 # make sure we don't match this existing_resource again
                 del existing_resource_identities[identity]
                 existing_resources_still_to_match.remove(
                     matching_existing_resource)
         if not existing_resources_still_to_match:
             break
+
+    # If configured add rest of existing resources to harvested dataset
+    try:
+        keep_existing_resources = config.get('keep_existing_resources', False)
+        if keep_existing_resources and harvested_dataset.get('resources'):
+            for existing_resource in existing_resources_still_to_match:
+                if existing_resource.get('name') and existing_resource.get('url'):
+                    harvested_dataset['resources'].append(existing_resource)
+    except:
+        pass

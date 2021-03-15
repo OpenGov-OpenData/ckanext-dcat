@@ -269,6 +269,30 @@ class TestCopyAcrossResourceIds(object):
             [('1', 'link1'), ('5', 'link5'), ('3', 'link3'), ('2', 'link2'),
              ('4', 'link4'), (None, 'link new')])
 
+    def test_copied_with_keeping_existing_resources(self):
+        existing_dataset = {'resources': [
+            {'url': 'http://abc1', 'title': 'Link 1', 'name': 'link1', 'id': '1'},
+            {'url': 'http://abc2', 'title': 'Link 2', 'name': 'link2', 'id': '2'},
+            {'url': 'http://abc3', 'title': 'Link 3', 'name': 'link3', 'id': '3'},
+            {'url': 'http://abc4', 'title': 'Link 4', 'name': 'link4', 'id': '4'},
+            {'url': 'http://abc5', 'title': 'Link 5', 'name': 'link5', 'id': '5'},
+            ]}
+        harvested_dataset = {'resources': [
+            {'url': 'http://abc1', 'title': 'Link 1'},
+            {'url': 'http://abc2', 'title': 'Link 2'},
+            {'url': 'http://abc3', 'title': 'Link 3'},
+            {'url': 'http://abc4', 'title': 'Link 4'},
+            {'url': 'http://abc00', 'title': 'New Link'},
+            ]}
+        copy_across_resource_ids(
+            existing_dataset=existing_dataset,
+            harvested_dataset=harvested_dataset,
+            config={"keep_existing_resources": True}
+        )
+        assert ([(r.get('id'), r['title']) for r in harvested_dataset['resources']] ==
+            [('1', 'Link 1'), ('2', 'Link 2'), ('3', 'Link 3'), ('4', 'Link 4'),
+             (None, 'New Link'), ('5', 'Link 5')])
+
     def test_not_copied_because_completely_different(self):
         harvested_dataset = {'resources': [
             {'url': 'http://def', 'title': 'link other'}]}
