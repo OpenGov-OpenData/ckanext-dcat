@@ -1,5 +1,9 @@
 from ckanext.dcat.utils import parse_accept_header
-from ckanext.dcat.utils import parse_date_iso_format
+from ckanext.dcat.utils import (
+    parse_date_iso_format,
+    is_xloader_format,
+    is_dcat_modified_field_changed
+)
 
 
 def test_accept_header_empty():
@@ -125,7 +129,7 @@ def test_accept_header_html_multiple():
 
 class TestDateIsoFormat(object):
 
-    def test_empty(self):
+    def test_empty_date(self):
         date = ''
         _date = parse_date_iso_format(date)
         assert _date is None
@@ -154,3 +158,119 @@ class TestDateIsoFormat(object):
         date = '2020/09/25'
         _date = parse_date_iso_format(date)
         assert _date == '2020-09-25T00:00:00'
+
+
+class TestIsXloaderFormat(object):
+
+    def test_empty_format(self):
+        resource_format = ''
+        xloader_format = is_xloader_format(resource_format)
+        assert not xloader_format
+
+    def test_csv_format(self):
+        resource_format = 'csv'
+        xloader_format = is_xloader_format(resource_format)
+        assert xloader_format
+
+    def test_xls_format(self):
+        resource_format = 'xls'
+        xloader_format = is_xloader_format(resource_format)
+        assert xloader_format
+
+
+class TestIsDcatModifiedFieldChanged(object):
+    def test_empty_old_package_dict(self):
+        old_package_dict = {}
+        new_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2021-03-01T10:10:45.123456"
+                }
+            ]
+        }
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert changed_dcat_modified
+
+    def test_empty_new_package_dict(self):
+        old_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2020-12-01T09:18:30.908070"
+                }
+            ]
+        }
+        new_package_dict = {}
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert changed_dcat_modified
+
+    def test_missinng_dcat_modified_in_new_package_dict(self):
+        old_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2020-12-01T09:18:30.908070"
+                }
+            ]
+        }
+        new_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert changed_dcat_modified
+
+    def test_changed_dcat_modified(self):
+        old_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2020-12-01T09:18:30.908070"
+                }
+            ]
+        }
+        new_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2021-03-01T10:10:45.123456"
+                }
+            ]
+        }
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert changed_dcat_modified
+
+    def test_same_dcat_modified(self):
+        old_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2021-03-01T10:10:45.123456"
+                }
+            ]
+        }
+        new_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2021-03-01T10:10:45.123456"
+                }
+            ]
+        }
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert not changed_dcat_modified
