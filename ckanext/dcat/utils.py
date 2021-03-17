@@ -514,3 +514,43 @@ def parse_date_iso_format(date):
     except Exception:
         pass
     return None
+
+
+def is_xloader_format(resource_format):
+    '''
+    Determines if the supplied format is accepted by ckanext-xloader
+    '''
+    DEFAULT_FORMATS = [
+        'csv', 'application/csv',
+        'xls', 'xlsx', 'tsv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ods', 'application/vnd.oasis.opendocument.spreadsheet',
+    ]
+    xloader_formats = config.get('ckanext.xloader.formats')
+    if xloader_formats is not None:
+        xloader_formats = xloader_formats.lower().split()
+    else:
+        xloader_formats = DEFAULT_FORMATS
+    if not resource_format:
+        return False
+    return resource_format.lower() in xloader_formats
+
+
+def is_dcat_modified_field_changed(old_package_dict, new_package_dict):
+    '''
+    Determines if dcat_modified field has changed
+    '''
+    old_dcat_modified = ''
+    new_dcat_modified = ''
+    for extra in old_package_dict.get('extras', {}):
+        if extra.get('key') == 'dcat_modified':
+            old_dcat_modified = extra.get('value')
+            break
+    for extra in new_package_dict.get('extras', {}):
+        if extra.get('key') == 'dcat_modified':
+            new_dcat_modified = extra.get('value')
+            break
+    if old_dcat_modified != new_dcat_modified:
+        return True
+    return False
