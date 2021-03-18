@@ -12,6 +12,7 @@ from ckan import logic
 from ckan import plugins as p
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
 
+from ckanext.dcat import utils
 from ckanext.dcat import converters
 from ckanext.dcat.harvesters.base import DCATHarvester
 
@@ -313,6 +314,19 @@ class DCATJSONHarvester(DCATHarvester):
 
                 package_id = p.toolkit.get_action(action)(context, package_dict)
                 log.info('%s dataset with id %s', message_status, package_id)
+
+            # Submit to xloader if dcat_modified date is different since resource urls may not change
+            if status == 'change':
+                dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
+                if dcat_modified_changed:
+                    for resource in package_dict.get('resources'):
+                        if utils.is_xloader_format(resource.get('format')):
+                            try:
+                                log.debug('Submitting harvested resource {0} to be xloadered'.format(resource['id']))
+                                p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
+                            except p.toolkit.ValidationError as e:
+                                log.debug(e)
+                                pass
 
         except Exception as e:
             dataset = json.loads(harvest_object.content)
