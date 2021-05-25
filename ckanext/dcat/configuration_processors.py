@@ -120,7 +120,7 @@ class DefaultGroups(BaseConfigProcessor):
                     # save the dict to the config object, as we'll need it
                     # in the import_stage of every dataset
                     config_obj['default_group_dicts'].append(group)
-                except NotFound, e:
+                except NotFound:
                     raise ValueError('Default group not found')
 
     @staticmethod
