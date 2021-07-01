@@ -320,7 +320,7 @@ class DCATJSONHarvester(DCATHarvester):
                 dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
                 if dcat_modified_changed:
                     for resource in package_dict.get('resources'):
-                        if utils.is_xloader_format(resource.get('format')):
+                        if utils.is_xloader_format(resource.get('format')) and resource.get('id'):
                             try:
                                 log.debug('Submitting harvested resource {0} to be xloadered'.format(resource['id']))
                                 p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
