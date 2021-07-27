@@ -216,7 +216,10 @@ class DCATHarvester(HarvesterBase):
             creating or updating the actual package.
         '''
 
-        self._set_config(harvest_object.job.source.config)
+        try:
+            self._set_config(harvest_object.job.source.config)
+        except:
+            self._set_config('')
 
         # Modify package_dict using config_processors
         for processor in self.config_processors:

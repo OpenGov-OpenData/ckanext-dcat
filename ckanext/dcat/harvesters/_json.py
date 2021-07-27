@@ -208,7 +208,10 @@ class DCATJSONHarvester(DCATHarvester):
             log.error('No harvest object received')
             return False
 
-        self._set_config(harvest_object.job.source.config)
+        try:
+            self._set_config(harvest_object.job.source.config)
+        except:
+            self._set_config('')
 
         if self.force_import:
             status = 'change'
