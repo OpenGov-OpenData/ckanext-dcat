@@ -161,7 +161,7 @@ class DefaultExtras(BaseConfigProcessor):
 
         if default_extras:
             override_extras = config.get('override_extras', False)
-            for key, value in default_extras.iteritems():
+            for key, value in default_extras.items():
                 existing_extra = get_extra(key, package_dict)
                 if existing_extra and not override_extras:
                     continue  # no need for the default
