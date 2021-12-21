@@ -133,13 +133,15 @@ class DCATPlugin(MixinDCATPlugin, p.SingletonPlugin, DefaultTranslation):
     def before_index(self, pkg_dict):
         dcat_modified = utils.parse_date_iso_format(pkg_dict.get('extras_dcat_modified'))
         if dcat_modified:
+            if not dcat_modified.endswith('Z'):
+                dcat_modified += 'Z'
             pkg_dict['metadata_modified'] = dcat_modified
-            pkg_dict['metadata_modified'] += 'Z'
 
         dcat_issued = utils.parse_date_iso_format(pkg_dict.get('extras_dcat_issued'))
         if dcat_issued:
+            if not dcat_issued.endswith('Z'):
+                dcat_issued += 'Z'
             pkg_dict['metadata_created'] = dcat_issued
-            pkg_dict['metadata_created'] += 'Z'
 
         return pkg_dict
 
