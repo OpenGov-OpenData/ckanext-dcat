@@ -192,7 +192,7 @@ class TestIsDcatModifiedFieldChanged(object):
             ]
         }
         changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
-        assert changed_dcat_modified
+        assert not changed_dcat_modified
 
     def test_empty_new_package_dict(self):
         old_package_dict = {
@@ -207,7 +207,37 @@ class TestIsDcatModifiedFieldChanged(object):
         }
         new_package_dict = {}
         changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
-        assert changed_dcat_modified
+        assert not changed_dcat_modified
+
+    def test_null_old_package_dict(self):
+        old_package_dict = None
+        new_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2021-03-01T10:10:45.123456"
+                }
+            ]
+        }
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert not changed_dcat_modified
+
+    def test_null_new_package_dict(self):
+        old_package_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "extras": [
+                {
+                    "key": "dcat_modified",
+                    "value": "2020-12-01T09:18:30.908070"
+                }
+            ]
+        }
+        new_package_dict = None
+        changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
+        assert not changed_dcat_modified
 
     def test_missinng_dcat_modified_in_new_package_dict(self):
         old_package_dict = {
