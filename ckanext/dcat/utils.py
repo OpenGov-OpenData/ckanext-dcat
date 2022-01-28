@@ -543,6 +543,8 @@ def is_dcat_modified_field_changed(old_package_dict, new_package_dict):
     '''
     old_dcat_modified = ''
     new_dcat_modified = ''
+    if not old_package_dict or not new_package_dict:
+        return False
     for extra in old_package_dict.get('extras', {}):
         if extra.get('key') == 'dcat_modified':
             old_dcat_modified = extra.get('value')
