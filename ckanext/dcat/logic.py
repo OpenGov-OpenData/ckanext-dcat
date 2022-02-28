@@ -21,7 +21,12 @@ def dcat_dataset_show(context, data_dict):
 
     toolkit.check_access('dcat_dataset_show', context, data_dict)
 
-    dataset_dict = toolkit.get_action('package_show')(context, data_dict)
+    try:
+        dataset_dict = toolkit.get_action('package_show')(context, data_dict)
+    except toolkit.ValidationError as error:
+        return toolkit.abort(400, error.message)
+    except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
+        return toolkit.abort(404, toolkit._('Package not found'))
 
     serializer = RDFSerializer(profiles=data_dict.get('profiles'))
 
