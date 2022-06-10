@@ -20,9 +20,8 @@ from geomet import wkt, InvalidGeoJSONException
 from ckan.model.license import LicenseRegister
 from ckan.plugins import toolkit
 from ckan.lib.munge import munge_tag
-from ckan.lib.helpers import url_for
-
-from ckanext.dcat.utils import resource_uri, publisher_uri_from_dataset_dict, DCAT_EXPOSE_SUBCATALOGS, DCAT_CLEAN_TAGS
+from ckanext.dcat.urls import url_for
+from ckanext.dcat.utils import resource_uri, publisher_uri_organization_fallback, DCAT_EXPOSE_SUBCATALOGS, DCAT_CLEAN_TAGS
 
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
@@ -62,19 +61,20 @@ class URIRefOrLiteral(object):
     Like CleanedURIRef, this is a factory class.
     '''
     def __new__(cls, value):
-        stripped_value = value.strip()
-        if (isinstance(value, basestring) and (stripped_value.startswith("http://")
-                                               or stripped_value.startswith("https://"))):
-            uri_obj = CleanedURIRef(value)
-            # although all invalid chars checked by rdflib should have been quoted, try to serialize
-            # the object. If it breaks, use Literal instead.
-            try:
+        try:
+            stripped_value = value.strip()
+            if (isinstance(value, basestring) and (stripped_value.startswith("http://")
+                                                or stripped_value.startswith("https://"))):
+                uri_obj = CleanedURIRef(value)
+                # although all invalid chars checked by rdflib should have been quoted, try to serialize
+                # the object. If it breaks, use Literal instead.
                 uri_obj.n3()
-            except Exception:
+                # URI is fine, return the object
+                return uri_obj
+            else:
                 return Literal(value)
-            # URI is fine, return the object
-            return uri_obj
-        else:
+        except Exception:
+            # In case something goes wrong: use Literal
             return Literal(value)
 
 
@@ -458,7 +458,8 @@ class RDFProfile(object):
         if obj:
             if isinstance(obj, BNode) and self._object(obj, RDF.type) == DCT.RightsStatement:
                 result = self._object_value(obj, RDFS.label)
-            elif isinstance(obj, Literal):
+            elif isinstance(obj, Literal) or isinstance(obj, URIRef):
+                # unicode_safe not include Literal or URIRef
                 result = six.text_type(obj)
         return result
 
@@ -1060,11 +1061,11 @@ class EuropeanDCATAPProfile(RDFProfile):
             ('title', DCT.title, None, Literal),
             ('notes', DCT.description, None, Literal),
             ('url', DCAT.landingPage, None, URIRef),
-            ('identifier', DCT.identifier, ['guid', 'id'], Literal),
+            ('identifier', DCT.identifier, ['guid', 'id'], URIRefOrLiteral),
             ('version', OWL.versionInfo, ['dcat_version'], Literal),
             ('version_notes', ADMS.versionNotes, None, Literal),
             ('frequency', DCT.accrualPeriodicity, None, URIRefOrLiteral),
-            ('access_rights', DCT.accessRights, None, Literal),
+            ('access_rights', DCT.accessRights, None, URIRefOrLiteral),
             ('dcat_type', DCT.type, None, Literal),
             ('provenance', DCT.provenance, None, Literal),
         ]
@@ -1086,13 +1087,13 @@ class EuropeanDCATAPProfile(RDFProfile):
             ('language', DCT.language, None, URIRefOrLiteral),
             ('theme', DCAT.theme, None, URIRef),
             ('conforms_to', DCT.conformsTo, None, Literal),
-            ('alternate_identifier', ADMS.identifier, None, Literal),
+            ('alternate_identifier', ADMS.identifier, None, URIRefOrLiteral),
             ('documentation', FOAF.page, None, URIRefOrLiteral),
             ('related_resource', DCT.relation, None, URIRefOrLiteral),
             ('has_version', DCT.hasVersion, None, URIRefOrLiteral),
             ('is_version_of', DCT.isVersionOf, None, URIRefOrLiteral),
-            ('source', DCT.source, None, Literal),
-            ('sample', ADMS.sample, None, Literal),
+            ('source', DCT.source, None, URIRefOrLiteral),
+            ('sample', ADMS.sample, None, URIRefOrLiteral),
         ]
         self._add_list_triples_from_dict(dataset_dict, dataset_ref, items)
 
@@ -1135,18 +1136,25 @@ class EuropeanDCATAPProfile(RDFProfile):
             dataset_dict.get('organization'),
         ]):
 
-            publisher_uri = publisher_uri_from_dataset_dict(dataset_dict)
+            publisher_uri = self._get_dataset_value(dataset_dict, 'publisher_uri')
+            publisher_uri_fallback = publisher_uri_organization_fallback(dataset_dict)
+            publisher_name = self._get_dataset_value(dataset_dict, 'publisher_name')
             if publisher_uri:
                 publisher_details = CleanedURIRef(publisher_uri)
+            elif not publisher_name and publisher_uri_fallback:
+                # neither URI nor name are available, use organization as fallback
+                publisher_details = CleanedURIRef(publisher_uri_fallback)
             else:
-                # No organization nor publisher_uri
+                # No publisher_uri
                 publisher_details = BNode()
 
             g.add((publisher_details, RDF.type, FOAF.Organization))
             g.add((dataset_ref, DCT.publisher, publisher_details))
 
-            publisher_name = self._get_dataset_value(dataset_dict, 'publisher_name')
-            if not publisher_name and dataset_dict.get('organization'):
+            # In case no name and URI are available, again fall back to organization.
+            # If no name but an URI is available, the name literal remains empty to
+            # avoid mixing organization and dataset values.
+            if not publisher_name and not publisher_uri and dataset_dict.get('organization'):
                 publisher_name = dataset_dict['organization']['title']
 
             g.add((publisher_details, FOAF.name, Literal(publisher_name)))
@@ -1414,7 +1422,7 @@ class SchemaOrgProfile(RDFProfile):
             self.g.add((subject, predicate, _type(value)))
 
     def _bind_namespaces(self):
-        self.g.bind('schema', namespaces['schema'])
+        self.g.namespace_manager.bind('schema', namespaces['schema'], replace=True)
 
     def _basic_fields_graph(self, dataset_ref, dataset_dict):
         items = [
@@ -1436,9 +1444,9 @@ class SchemaOrgProfile(RDFProfile):
         self._add_date_triples_from_dict(dataset_dict, dataset_ref, items)
 
         # Dataset URL
-        dataset_url = url_for('dataset_read',
+        dataset_url = url_for('dataset.read',
                               id=dataset_dict['name'],
-                              qualified=True)
+                              _external=True)
         self.g.add((dataset_ref, SCHEMA.url, Literal(dataset_url)))
 
     def _catalog_graph(self, dataset_ref, dataset_dict):
@@ -1454,7 +1462,7 @@ class SchemaOrgProfile(RDFProfile):
             group_url = url_for(controller='group',
                                 action='read',
                                 id=group.get('id'),
-                                qualified=True)
+                                _external=True)
             about = BNode()
 
             self.g.add((about, RDF.type, SCHEMA.Thing))
@@ -1481,19 +1489,25 @@ class SchemaOrgProfile(RDFProfile):
             dataset_dict.get('organization'),
         ]):
 
-            publisher_uri = publisher_uri_from_dataset_dict(dataset_dict)
+            publisher_uri = self._get_dataset_value(dataset_dict, 'publisher_uri')
+            publisher_uri_fallback = publisher_uri_organization_fallback(dataset_dict)
+            publisher_name = self._get_dataset_value(dataset_dict, 'publisher_name')
             if publisher_uri:
-                publisher_details = URIRef(publisher_uri)
+                publisher_details = CleanedURIRef(publisher_uri)
+            elif not publisher_name and publisher_uri_fallback:
+                # neither URI nor name are available, use organization as fallback
+                publisher_details = CleanedURIRef(publisher_uri_fallback)
             else:
-                # No organization nor publisher_uri
+                # No publisher_uri
                 publisher_details = BNode()
 
             self.g.add((publisher_details, RDF.type, SCHEMA.Organization))
             self.g.add((dataset_ref, SCHEMA.publisher, publisher_details))
 
-
-            publisher_name = self._get_dataset_value(dataset_dict, 'publisher_name')
-            if not publisher_name and dataset_dict.get('organization'):
+            # In case no name and URI are available, again fall back to organization.
+            # If no name but an URI is available, the name literal remains empty to
+            # avoid mixing organization and dataset values.
+            if not publisher_name and not publisher_uri and dataset_dict.get('organization'):
                 publisher_name = dataset_dict['organization']['title']
             self.g.add((publisher_details, SCHEMA.name, Literal(publisher_name)))
 

@@ -14,11 +14,9 @@ import ckan.model as model
 import ckan.lib.plugins as lib_plugins
 
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
-
+from ckanext.harvest.logic.schema import unicode_safe
 from ckanext.dcat.harvesters.base import DCATHarvester
-
 from ckanext.dcat.processors import RDFParserException, RDFParser
-
 from ckanext.dcat.interfaces import IDCATRDFHarvester
 
 
@@ -208,6 +206,15 @@ class DCATRDFHarvester(DCATHarvester):
                 self._save_gather_error('Error parsing the RDF file: {0}'.format(e), harvest_job)
                 return []
 
+            for harvester in p.PluginImplementations(IDCATRDFHarvester):
+                parser, after_parsing_errors = harvester.after_parsing(parser, harvest_job)
+
+                for error_msg in after_parsing_errors:
+                    self._save_gather_error(error_msg, harvest_job)
+
+            if not parser:
+                return []
+
             try:
 
                 source_dataset = model.Package.get(harvest_job.source.id)
@@ -370,7 +377,7 @@ class DCATRDFHarvester(DCATHarvester):
 
                 # We need to explicitly provide a package ID
                 dataset['id'] = str(uuid.uuid4())
-                package_schema['id'] = [str]
+                package_schema['id'] = [unicode_safe]
 
                 harvester_tmp_dict = {}
 
