@@ -12,9 +12,9 @@ from ckan import model
 from ckan import logic
 from ckan import plugins as p
 from ckanext.harvest.model import HarvestObject, HarvestObjectExtra
-
-from ckanext.dcat import utils
+from ckanext.harvest.logic.schema import unicode_safe
 from ckanext.dcat import converters
+from ckanext.dcat import utils
 from ckanext.dcat.harvesters.base import DCATHarvester
 
 log = logging.getLogger(__name__)
@@ -194,8 +194,11 @@ class DCATJSONHarvester(DCATHarvester):
                 guid=guid, job=harvest_job,
                 package_id=guid_to_package_id[guid],
                 extras=[HarvestObjectExtra(key='status', value='delete')])
-            obj.save()
             ids.append(obj.id)
+            model.Session.query(HarvestObject).\
+                filter_by(guid=guid).\
+                update({'current': False}, False)
+            obj.save()
 
         return ids
 
@@ -227,11 +230,6 @@ class DCATJSONHarvester(DCATHarvester):
                 context, {'id': harvest_object.package_id})
             log.info('Deleted package {0} with guid {1}'
                      .format(harvest_object.package_id, harvest_object.guid))
-
-            model.Session.query(HarvestObject).\
-                filter_by(guid=harvest_object.guid).\
-                filter_by(current=True).\
-                update({'current': False}, False)
 
             return True
 
@@ -296,7 +294,7 @@ class DCATJSONHarvester(DCATHarvester):
 
                 # We need to explicitly provide a package ID
                 package_dict['id'] = str(uuid.uuid4())
-                package_schema['id'] = [str]
+                package_schema['id'] = [unicode_safe]
 
                 # Save reference to the package on the object
                 harvest_object.package_id = package_dict['id']

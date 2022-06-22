@@ -104,7 +104,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             'metadata_modified': '2015-06-26T15:21:09.075774',
             'tags': [{'name': 'Tag 1'}, {'name': 'Tag 2'}],
             'extras': [
-                {'key': 'alternate_identifier', 'value': '[\"xyz\", \"abc\"]'},
+                {'key': 'alternate_identifier', 'value': '[\"xyz\", \"abc\", \"https://data.some.org/catalog/datasets/a-id-1\"]'},
                 {'key': 'version_notes', 'value': 'This is a beta version'},
                 {'key': 'frequency', 'value': 'monthly'},
                 {'key': 'language', 'value': '[\"en\", \"http://publications.europa.eu/resource/authority/language/ITA\"]'},
@@ -117,8 +117,8 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
                 {'key': 'related_resource', 'value': '[\"http://dataset.info.org/related1\", \"http://dataset.info.org/related2\"]'},
                 {'key': 'has_version', 'value': '[\"https://data.some.org/catalog/datasets/derived-dataset-1\", \"https://data.some.org/catalog/datasets/derived-dataset-2\"]'},
                 {'key': 'is_version_of', 'value': '[\"https://data.some.org/catalog/datasets/original-dataset\"]'},
-                {'key': 'source', 'value': '[\"https://data.some.org/catalog/datasets/source-dataset-1\", \"https://data.some.org/catalog/datasets/source-dataset-2\"]'},
-                {'key': 'sample', 'value': '[\"https://data.some.org/catalog/datasets/9df8df51-63db-37a8-e044-0003ba9b0d98/sample\"]'},
+                {'key': 'source', 'value': '[\"https://data.some.org/catalog/datasets/source-dataset-1\", \"https://data.some.org/catalog/datasets/source-dataset-2\", \"test_source\"]'},
+                {'key': 'sample', 'value': '[\"https://data.some.org/catalog/datasets/9df8df51-63db-37a8-e044-0003ba9b0d98/sample\", \"test_sample\"]'},
             ]
         }
         extras = self._extras(dataset)
@@ -156,13 +156,13 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ('language', DCT.language, [Literal, URIRef]),
             ('theme', DCAT.theme, URIRef),
             ('conforms_to', DCT.conformsTo, Literal),
-            ('alternate_identifier', ADMS.identifier, Literal),
+            ('alternate_identifier', ADMS.identifier, [Literal, Literal, URIRef]),
             ('documentation', FOAF.page, URIRef),
             ('related_resource', DCT.relation, URIRef),
             ('has_version', DCT.hasVersion, URIRef),
             ('is_version_of', DCT.isVersionOf, URIRef),
-            ('source', DCT.source, Literal),
-            ('sample', ADMS.sample, Literal),
+            ('source', DCT.source, [URIRef, URIRef, Literal]),
+            ('sample', ADMS.sample, [URIRef, Literal]),
         ]:
             values = json.loads(extras[item[0]])
             assert len([t for t in g.triples((dataset_ref, item[1], None))]) == len(values)
@@ -190,6 +190,24 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         dataset_ref = s.graph_from_dataset(dataset)
 
         assert self._triple(g, dataset_ref, DCT.identifier, extras['identifier'])
+
+    def test_identifier_extra_uri(self):
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'extras': [
+                {'key': 'identifier', 'value': 'https://data.some.org/catalog/datasets/idxxx'},
+                {'key': 'guid', 'value': 'guidyyy'},
+            ]
+        }
+        extras = self._extras(dataset)
+
+        s = RDFSerializer()
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        assert self._triple(g, dataset_ref, DCT.identifier, URIRef(extras['identifier']))
 
     def test_identifier_guid(self):
         dataset = {
@@ -236,6 +254,41 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         dataset_ref = s.graph_from_dataset(dataset)
 
         assert self._triple(g, dataset_ref, DCT.identifier, dataset['id'])
+
+    def test_alternate_identifier_uri(self):
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'extras': [
+                {'key': 'alternate_identifier', 'value': 'https://data.some.org/catalog/datasets/alt-id'},
+            ]
+        }
+
+        extras = self._extras(dataset)
+
+        s = RDFSerializer()
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        assert self._triple(g, dataset_ref, ADMS.identifier, URIRef(extras['alternate_identifier']))
+
+    def test_access_rights_uri(self):
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'extras': [
+                {'key': 'access_rights', 'value': 'https://data.some.org/catalog/datasets/public'}
+            ]
+        }
+        extras = self._extras(dataset)
+
+        s = RDFSerializer()
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        assert self._triple(g, dataset_ref, DCT.accessRights, URIRef(extras['access_rights']))
 
     def test_contact_details_extras(self):
         dataset = {
@@ -408,6 +461,39 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
 
         assert self._triple(g, publisher, RDF.type, FOAF.Organization)
         assert self._triple(g, publisher, FOAF.name, extras['publisher_name'])
+
+    def test_publisher_org_no_uri(self):
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'organization': {
+                'id': '',
+                'name': 'publisher1',
+                'title': 'Example Publisher from Org',
+            },
+            'extras': [
+                {'key': 'publisher_name', 'value': 'Example Publisher'},
+                {'key': 'publisher_email', 'value': 'publisher@example.com'},
+                {'key': 'publisher_url', 'value': 'http://example.com/publisher/home'},
+                {'key': 'publisher_type', 'value': 'http://purl.org/adms/publishertype/Company'},
+            ]
+        }
+        extras = self._extras(dataset)
+
+        s = RDFSerializer()
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        publisher = self._triple(g, dataset_ref, DCT.publisher, None)[2]
+        assert publisher
+        assert isinstance(publisher, BNode)
+
+        assert self._triple(g, publisher, RDF.type, FOAF.Organization)
+        assert self._triple(g, publisher, FOAF.name, extras['publisher_name'])
+        assert self._triple(g, publisher, FOAF.mbox, extras['publisher_email'])
+        assert self._triple(g, publisher, FOAF.homepage, URIRef(extras['publisher_url']))
+        assert self._triple(g, publisher, DCT.type, URIRef(extras['publisher_type']))
 
     def test_temporal(self):
         dataset = {
