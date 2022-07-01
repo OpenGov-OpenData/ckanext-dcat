@@ -711,8 +711,8 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
 
         # verify
         msg = '''Remote file is too big. Allowed
-                    file size: {allowed}, Content-Length: {actual}.'''.format(
-                    allowed=allowed_file_size, actual=actual_file_size)
+                        file size: {allowed}, Content-Length: {actual}.'''.format(
+                        allowed=allowed_file_size, actual=actual_file_size)
         mock_save_gather_error.assert_called_once_with(msg, harvest_job)
 
     @patch('ckanext.dcat.harvesters.DCATRDFHarvester._save_gather_error')
@@ -740,8 +740,8 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
 
         # verify
         msg = '''Remote file is too big. Allowed
-                    file size: {allowed}, Content-Length: {actual}.'''.format(
-                    allowed=allowed_file_size, actual=actual_file_size)
+                        file size: {allowed}, Content-Length: {actual}.'''.format(
+                        allowed=allowed_file_size, actual=actual_file_size)
         mock_save_gather_error.assert_called_once_with(msg, harvest_job)
 
     @responses.activate
