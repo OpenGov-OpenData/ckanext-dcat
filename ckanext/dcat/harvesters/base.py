@@ -85,50 +85,50 @@ class DCATHarvester(HarvesterBase):
             log.debug('Getting file %s', url)
 
             # get the `requests` session object
-            session = requests.Session()
-            for harvester in p.PluginImplementations(IDCATRDFHarvester):
-                session = harvester.update_session(session)
+            with requests.Session() as session:
+                for harvester in p.PluginImplementations(IDCATRDFHarvester):
+                    session = harvester.update_session(session)
 
-            # first we try a HEAD request which may not be supported
-            did_get = False
-            r = session.head(url)
+                # first we try a HEAD request which may not be supported
+                did_get = False
+                r = session.head(url)
 
-            if r.status_code == 405 or r.status_code == 400:
-                r = session.get(url, stream=True)
-                did_get = True
-            r.raise_for_status()
+                if r.status_code == 405 or r.status_code == 400:
+                    r = session.get(url, stream=True, timeout=30)
+                    did_get = True
+                r.raise_for_status()
 
-            max_file_size = 1024 * 1024 * toolkit.asint(config.get('ckanext.dcat.max_file_size', self.DEFAULT_MAX_FILE_SIZE_MB))
-            cl = r.headers.get('content-length')
-            if cl and int(cl) > max_file_size:
-                msg = '''Remote file is too big. Allowed
-                    file size: {allowed}, Content-Length: {actual}.'''.format(
-                    allowed=max_file_size, actual=cl)
-                self._save_gather_error(msg, harvest_job)
-                return None, None
-
-            if not did_get:
-                r = session.get(url, stream=True)
-
-            length = 0
-            content = '' if six.PY2 else b''
-            for chunk in r.iter_content(chunk_size=self.CHUNK_SIZE):
-                content = content + chunk
-
-                length += len(chunk)
-
-                if length >= max_file_size:
-                    self._save_gather_error('Remote file is too big.',
-                                            harvest_job)
+                max_file_size = 1024 * 1024 * toolkit.asint(config.get('ckanext.dcat.max_file_size', self.DEFAULT_MAX_FILE_SIZE_MB))
+                cl = r.headers.get('content-length')
+                if cl and int(cl) > max_file_size:
+                    msg = '''Remote file is too big. Allowed
+                        file size: {allowed}, Content-Length: {actual}.'''.format(
+                        allowed=max_file_size, actual=cl)
+                    self._save_gather_error(msg, harvest_job)
                     return None, None
 
-            if not six.PY2:
-                content = content.decode('utf-8')
+                if not did_get:
+                    r = session.get(url, stream=True, timeout=30)
 
-            if content_type is None and r.headers.get('content-type'):
-                content_type = r.headers.get('content-type').split(";", 1)[0]
+                length = 0
+                content = '' if six.PY2 else b''
+                for chunk in r.iter_content(chunk_size=self.CHUNK_SIZE):
+                    content = content + chunk
 
-            return content, content_type
+                    length += len(chunk)
+
+                    if length >= max_file_size:
+                        self._save_gather_error('Remote file is too big.',
+                                                harvest_job)
+                        return None, None
+
+                if not six.PY2:
+                    content = content.decode('utf-8')
+
+                if content_type is None and r.headers.get('content-type'):
+                    content_type = r.headers.get('content-type').split(";", 1)[0]
+
+                return content, content_type
 
         except requests.exceptions.HTTPError as error:
             if page > 1 and error.response.status_code == 404:
