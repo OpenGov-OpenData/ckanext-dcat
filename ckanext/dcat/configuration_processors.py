@@ -4,6 +4,7 @@ import re
 
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
+from datetime import datetime
 
 from ckan import model
 from ckan import plugins as p
@@ -209,7 +210,7 @@ class MappingFields(BaseConfigProcessor):
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
-        # set the mapping fields its corresponding default_values
+        # Map fields from source to target
         map_fields = config.get('map_fields', [])
         if map_fields:
             for map_field in map_fields:
@@ -217,10 +218,27 @@ class MappingFields(BaseConfigProcessor):
                 target_field = map_field.get('target')
                 default_value = map_field.get('default')
                 value = dcat_dict.get(source_field, default_value)
+
                 # If value is a list, convert to string
                 if isinstance(value, list):
                     value = ', '.join(str(x) for x in value)
+
+                # If configured convert timestamp to separate date and time formats
+                if dcat_dict.get('issued'):
+                    if map_field.get('source') == 'issued_date':
+                        value = datetime.strptime(dcat_dict.get('issued'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+                    if map_field.get('source') == 'issued_time':
+                        value = datetime.strptime(dcat_dict.get('issued'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%H:%M:%S.%fZ')
+
+                if dcat_dict.get('modified'):
+                    if map_field.get('source') == 'modified_date':
+                        value = datetime.strptime(dcat_dict.get('modified'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+                    if map_field.get('source') == 'modified_time':
+                        value = datetime.strptime(dcat_dict.get('modified'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%H:%M:%S.%fZ')
+
+                # Map value to dataset field
                 package_dict[target_field] = value
+
                 # Remove from extras any keys present in the config
                 existing_extra = get_extra(target_field, package_dict)
                 if existing_extra:
