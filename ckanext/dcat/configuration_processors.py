@@ -226,15 +226,27 @@ class MappingFields(BaseConfigProcessor):
                 # If configured convert timestamp to separate date and time formats
                 if dcat_dict.get('issued'):
                     if map_field.get('source') == 'issued_date':
-                        value = datetime.strptime(dcat_dict.get('issued'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+                        value = datetime.strptime(
+                            dcat_dict.get('issued'),
+                            '%Y-%m-%dT%H:%M:%S.%fZ'
+                        ).strftime('%Y-%m-%d')
                     if map_field.get('source') == 'issued_time':
-                        value = datetime.strptime(dcat_dict.get('issued'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%H:%M:%S.%fZ')
+                        value = datetime.strptime(
+                            dcat_dict.get('issued'),
+                            '%Y-%m-%dT%H:%M:%S.%fZ'
+                        ).strftime('%H:%M:%S.%fZ')
 
                 if dcat_dict.get('modified'):
                     if map_field.get('source') == 'modified_date':
-                        value = datetime.strptime(dcat_dict.get('modified'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d')
+                        value = datetime.strptime(
+                            dcat_dict.get('modified'),
+                            '%Y-%m-%dT%H:%M:%S.%fZ'
+                        ).strftime('%Y-%m-%d')
                     if map_field.get('source') == 'modified_time':
-                        value = datetime.strptime(dcat_dict.get('modified'), '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%H:%M:%S.%fZ')
+                        value = datetime.strptime(
+                            dcat_dict.get('modified'),
+                            '%Y-%m-%dT%H:%M:%S.%fZ'
+                        ).strftime('%H:%M:%S.%fZ')
 
                 # Map value to dataset field
                 package_dict[target_field] = value
