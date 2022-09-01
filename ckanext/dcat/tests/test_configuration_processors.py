@@ -392,7 +392,7 @@ class TestMappingFields:
 
         self.processor.modify_package_dict(package, config, dcat_dict)
 
-        assert package["modified_time"] == "11:16:25.000Z"
+        assert package["modified_time"] == "11:16:25.000000Z"
 
 class TestPublisher:
 
