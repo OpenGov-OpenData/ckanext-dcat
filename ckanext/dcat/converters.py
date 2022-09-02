@@ -2,11 +2,8 @@ from past.builtins import basestring
 import logging
 import mimetypes
 import re
+from ckan.common import config
 
-try:
-    from ckan.common import config
-except ImportError:
-    from pylons import config
 
 log = logging.getLogger(__name__)
 mimetypes.init()
@@ -17,9 +14,12 @@ def dcat_to_ckan(dcat_dict):
     package_dict = {}
 
     package_dict['title'] = dcat_dict.get('title')
-    package_dict['notes'] = dcat_dict.get('description')
+    package_dict['notes'] = dcat_dict.get('description', '')
     package_dict['url'] = dcat_dict.get('landingPage')
 
+    if 'fluent' in config.get('ckan.plugins'):
+        package_dict['title_translated'] = {'en': dcat_dict.get('title')}
+        package_dict['notes_translated'] = {'en': dcat_dict.get('description', '') or ''}
 
     package_dict['tags'] = []
     for keyword in dcat_dict.get('keyword', []):
@@ -57,6 +57,7 @@ def dcat_to_ckan(dcat_dict):
 
     package_dict['resources'] = []
     for distribution in dcat_dict.get('distribution', []):
+        # Guess format if not present
         format = ''
         if distribution.get('format'):
             format = distribution.get('format')
@@ -75,10 +76,14 @@ def dcat_to_ckan(dcat_dict):
 
         resource = {
             'name': distribution.get('title', dcat_dict.get('title')),
-            'description': distribution.get('description'),
+            'description': distribution.get('description', ''),
             'url': distribution.get('downloadURL') or distribution.get('accessURL'),
             'format': format,
         }
+
+        if 'fluent' in config.get('ckan.plugins'):
+            resource['name_translated'] = {'en': distribution.get('title', dcat_dict.get('title'))}
+            resource['description_translated'] = {'en': distribution.get('description', '') or ''}
 
         if distribution.get('byteSize'):
             try:

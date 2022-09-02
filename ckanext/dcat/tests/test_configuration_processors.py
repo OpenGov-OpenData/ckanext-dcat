@@ -302,6 +302,97 @@ class TestMappingFields:
 
         assert package["language"] == "Spanish"
 
+    def test_modify_package_mapping_values_with_issued_date(self):
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "source": "issued_date",
+                    "target": "issued_date"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "issued": "2021-08-01T20:05:31.000Z"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["issued_date"] == "2021-08-01"
+
+    def test_modify_package_mapping_values_with_issued_time(self):
+        package = {
+            "title": "Test Dataset 1",
+            "name": "test-dataset-1"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "source": "issued_time",
+                    "target": "issued_time"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset-1",
+            "name": "test-dataset-1",
+            "issued": "2021-08-01T20:05:31.000Z"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["issued_time"] == "20:05:31.000000Z"
+
+    def test_modify_package_mapping_values_with_modified_date(self):
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "source": "modified_date",
+                    "target": "modified_date"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "modified": "2022-08-31T11:16:25.000Z"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["modified_date"] == "2022-08-31"
+
+    def test_modify_package_mapping_values_with_modified_time(self):
+        package = {
+            "title": "Test Dataset 1",
+            "name": "test-dataset-1"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "source": "modified_time",
+                    "target": "modified_time"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset-1",
+            "name": "test-dataset-1",
+            "modified": "2022-08-31T11:16:25.000Z"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["modified_time"] == "11:16:25.000000Z"
 
 class TestPublisher:
 
