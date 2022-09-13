@@ -405,7 +405,7 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
         keep_existing_resources = config.get('keep_existing_resources', False)
         if keep_existing_resources and harvested_dataset.get('resources'):
             for existing_resource in existing_resources_still_to_match:
-                if existing_resource.get('name') and existing_resource.get('url'):
+                if existing_resource.get('url'):
                     harvested_dataset['resources'].append(existing_resource)
     except:
         pass
