@@ -200,6 +200,14 @@ class DCATJSONHarvester(DCATHarvester):
                 update({'current': False}, False)
             obj.save()
 
+            # Rename package before delete so that its url can be reused
+            context = {'model': model, 'session': model.Session,
+                       'user': self._get_user_name()}
+            p.toolkit.get_action('package_patch')(context, {
+                'id': guid_to_package_id[guid],
+                'name': guid_to_package_id[guid] + '-deleted'
+            })
+
         return ids
 
     def fetch_stage(self, harvest_object):
