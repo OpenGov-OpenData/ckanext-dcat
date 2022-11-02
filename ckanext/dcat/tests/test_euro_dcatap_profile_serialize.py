@@ -17,31 +17,10 @@ from ckantoolkit.tests import helpers, factories
 from ckanext.dcat import utils
 from ckanext.dcat.processors import RDFSerializer
 from ckanext.dcat.profiles import (DCAT, DCT, ADMS, XSD, VCARD, FOAF, SCHEMA,
-                                   SKOS, LOCN, GSP, OWL, SPDX, GEOJSON_IMT)
+                                   SKOS, LOCN, GSP, OWL, SPDX, GEOJSON_IMT, 
+                                   DISTRIBUTION_LICENSE_FALLBACK_CONFIG)
 from ckanext.dcat.utils import DCAT_EXPOSE_SUBCATALOGS
-
-
-class BaseSerializeTest(object):
-
-    def _extras(self, dataset):
-        extras = {}
-        for extra in dataset.get('extras'):
-            extras[extra['key']] = extra['value']
-        return extras
-
-    def _triples(self, graph, subject, predicate, _object, data_type=None):
-
-        if not (isinstance(_object, URIRef) or isinstance(_object, BNode) or _object is None):
-            if data_type:
-                _object = Literal(_object, datatype=data_type)
-            else:
-                _object = Literal(_object)
-        triples = [t for t in graph.triples((subject, predicate, _object))]
-        return triples
-
-    def _triple(self, graph, subject, predicate, _object, data_type=None):
-        triples = self._triples(graph, subject, predicate, _object, data_type)
-        return triples[0] if triples else None
+from ckanext.dcat.tests.utils import BaseSerializeTest
 
 
 class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
@@ -57,7 +36,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         :param expected_mediatype:
             expected list of dcat:mediaType items in the resource
         """
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset_dict)
@@ -123,7 +102,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -184,7 +163,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -202,7 +181,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -219,7 +198,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -232,7 +211,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             'name': 'test-dataset',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -248,7 +227,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -266,7 +245,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
 
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -283,7 +262,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -309,7 +288,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -332,7 +311,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             'author_email': 'ped@example.com',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -351,7 +330,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             'author_email': 'ped@example.com',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -371,7 +350,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             'author_email': 'mailto:ped@example.com',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -403,7 +382,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -429,7 +408,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             }
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -450,7 +429,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -480,7 +459,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -506,7 +485,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -531,7 +510,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -561,7 +540,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -586,7 +565,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
         }
         extras = self._extras(dataset)
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -626,7 +605,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -673,7 +652,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -739,7 +718,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -766,7 +745,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -794,7 +773,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -822,7 +801,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -851,7 +830,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -880,7 +859,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -909,7 +888,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -939,7 +918,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -969,7 +948,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -999,7 +978,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -1095,7 +1074,7 @@ class TestEuroDCATAPProfileSerializeDataset(BaseSerializeTest):
             ]
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         dataset_ref = s.graph_from_dataset(dataset)
@@ -1117,7 +1096,7 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
 
     def test_graph_from_catalog(self):
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         catalog = s.graph_from_catalog()
@@ -1139,7 +1118,7 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
             'language': 'de',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         catalog = s.graph_from_catalog(catalog_dict)
@@ -1162,7 +1141,7 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
             'language': 'http://publications.europa.eu/resource/authority/language/ITA',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         catalog = s.graph_from_catalog(catalog_dict)
@@ -1176,7 +1155,7 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
 
         dataset = factories.Dataset()
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         catalog = s.graph_from_catalog()
@@ -1211,7 +1190,7 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
             'language': 'de',
         }
 
-        s = RDFSerializer()
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
         g = s.g
 
         s.serialize_catalog(catalog_dict, dataset_dicts=[dataset])
@@ -1238,3 +1217,165 @@ class TestEuroDCATAPProfileSerializeCatalog(BaseSerializeTest):
         dataset_title = list(g.objects(dataset_ref, DCT.title))
         assert len(dataset_title) == 1
         assert str(dataset_title[0]) == dataset['title']
+
+    @pytest.mark.ckan_config(DISTRIBUTION_LICENSE_FALLBACK_CONFIG, 'true')
+    def test_set_missing_license_for_resource(self):
+        ''' Check the behavior if param in config is set: Add license_id to the resource'''
+        resource = {
+            'id': 'c041c635-054f-4431-b647-f9186926d021',
+            'package_id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'CSV file',
+            'url': 'http://example.com/data/file.csv',
+            'download_url': 'http://example.com/data/file.csv',
+        }
+
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'title': 'Test DCAT dataset',
+            'license_id': 'https://example.com/license',
+            'license_url': 'https://example.com/another-license',
+            'resources': [
+                resource
+            ]
+        }
+
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        distribution = self._triple(g, dataset_ref, DCAT.distribution, None)[2]
+        assert str(distribution) == utils.resource_uri(resource)
+
+        # Verify that the license_id of the dataset is now also in the distribution
+        assert self._triple(g, distribution, DCT.license, URIRef(dataset['license_id']))
+
+    @pytest.mark.ckan_config(DISTRIBUTION_LICENSE_FALLBACK_CONFIG, 'true')
+    def test_set_missing_license_url_for_resource(self):
+        ''' Check the behavior if param in config is set: Add license_url to the resource since license_id is not a valid URI '''
+        resource = {
+            'id': 'c041c635-054f-4431-b647-f9186926d021',
+            'package_id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'CSV file',
+            'url': 'http://example.com/data/file.csv',
+            'download_url': 'http://example.com/data/file.csv',
+        }
+
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'title': 'Test DCAT dataset',
+            'license_id': 'invalidUrl',
+            'license_url': 'https://example.com/another-license',
+            'resources': [
+                resource
+            ]
+        }
+
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        distribution = self._triple(g, dataset_ref, DCAT.distribution, None)[2]
+        assert str(distribution) == utils.resource_uri(resource)
+
+        # Verify that the license_url of the dataset is now also in the distribution
+        assert self._triple(g, distribution, DCT.license, URIRef(dataset['license_url']))
+
+    @pytest.mark.ckan_config(DISTRIBUTION_LICENSE_FALLBACK_CONFIG, 'true')
+    def test_set_no_missing_license_for_resource(self):
+        ''' Check the behavior if param in config is set and no valid license information is given'''
+        resource = {
+            'id': 'c041c635-054f-4431-b647-f9186926d021',
+            'package_id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'CSV file',
+            'url': 'http://example.com/data/file.csv',
+            'download_url': 'http://example.com/data/file.csv',
+        }
+
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'title': 'Test DCAT dataset',
+            'license_id': 'invalidUrl',
+            'license_url': 'anotherInvalidUrl',
+            'resources': [
+                resource
+            ]
+        }
+
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        distribution = self._triple(g, dataset_ref, DCAT.distribution, None)[2]
+        assert str(distribution) == utils.resource_uri(resource)
+
+        # Verify that there is no license in the distributions
+        assert not self._triple(g, distribution, DCT.license, None)
+
+    def test_dont_set_missing_license_for_resource(self):
+        ''' Check the default behavior: Do not add a license to the resource'''
+        resource = {
+            'id': 'c041c635-054f-4431-b647-f9186926d021',
+            'package_id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'CSV file',
+            'url': 'http://example.com/data/file.csv',
+            'download_url': 'http://example.com/data/file.csv',
+        }
+
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'title': 'Test DCAT dataset',
+            'license_id': 'https://example.com/license',
+            'resources': [
+                resource
+            ]
+        }
+
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        distribution = self._triple(g, dataset_ref, DCAT.distribution, None)[2]
+        assert str(distribution) == utils.resource_uri(resource)
+
+        # Verify that the license of the dataset is not in the distribution
+        assert not self._triple(g, distribution, DCT.license, URIRef(dataset['license_id']))
+
+    @pytest.mark.ckan_config(DISTRIBUTION_LICENSE_FALLBACK_CONFIG, 'false')
+    def test_dont_set_missing_license_for_resource_config_param_value_false(self):
+        ''' Check the default behavior: Do not add a license to the resource'''
+        resource = {
+            'id': 'c041c635-054f-4431-b647-f9186926d021',
+            'package_id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'CSV file',
+            'url': 'http://example.com/data/file.csv',
+            'download_url': 'http://example.com/data/file.csv',
+        }
+
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'title': 'Test DCAT dataset',
+            'license_id': 'https://example.com/license',
+            'resources': [
+                resource
+            ]
+        }
+
+        s = RDFSerializer(profiles=['euro_dcat_ap'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        distribution = self._triple(g, dataset_ref, DCAT.distribution, None)[2]
+        assert str(distribution) == utils.resource_uri(resource)
+
+        # Verify that the license of the dataset is not in the distribution
+        assert not self._triple(g, distribution, DCT.license, URIRef(dataset['license_id']))
