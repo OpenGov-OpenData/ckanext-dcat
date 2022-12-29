@@ -407,5 +407,7 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
             for existing_resource in existing_resources_still_to_match:
                 if existing_resource.get('url'):
                     harvested_dataset['resources'].append(existing_resource)
-    except:
+    except Exception:
         pass
+    if 'private' in existing_dataset.keys():
+        harvested_dataset['private'] = existing_dataset['private']
