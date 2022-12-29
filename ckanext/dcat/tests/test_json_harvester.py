@@ -3,6 +3,9 @@ from builtins import object
 
 import responses
 import pytest
+from ckan.common import config
+from ckan.model import meta
+
 try:
     from unittest.mock import patch
 except ImportError:
@@ -139,6 +142,98 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         assert len(new_resources) == 1
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
+
+    @responses.activate
+    def test_harvest_update_existing_dataset(self):
+        content = '''
+{
+  "dataset":[
+    {"@type": "dcat:Dataset",
+     "identifier": "http://example.com/datasets/example1",
+     "title": "Example dataset 1",
+     "description": "Lots of species",
+     "publisher": {
+        "@type": "org:Organization",
+        "name": "ORG_NAME"
+    },
+     "license": "https://example.com/license",
+     "distribution":[
+       {"@type":"dcat:Distribution",
+        "title":"Example resource 1",
+        "format":"Web page",
+        "mediaType":"text/html",
+        "accessURL":"http://example.com/datasets/example1"}
+      ]
+    }
+  ]
+}
+        '''
+        self._add_responses_solr_passthru()
+        url = self.json_mock_url
+        content_type = self.json_content_type
+
+        # Mock the GET request to get the file
+        responses.add(responses.GET, url,
+                      body=content,
+                      content_type=content_type)
+        admin_user = factories.Sysadmin(name='harvest_user')
+        user = factories.User()
+        owner_org = factories.Organization(user=user)
+        # Mock an update in the remote dataset.
+        # Change title just to be sure we harvest ok
+        content_second_harvest = \
+            content.replace('Example dataset 1', 'Example dataset 1 (updated)')
+
+        content_second_harvest = \
+            content_second_harvest.replace('ORG_NAME', owner_org['name'])
+
+        responses.add(responses.GET, url,
+                      body=content_second_harvest,
+                      content_type=content_type)
+
+        # The harvester will try to do a HEAD request first so we need to mock
+        # this as well
+        responses.add(responses.HEAD, url,
+                      status=405, content_type=content_type)
+
+        kwargs = {
+            'source_type': 'dcat_json',
+            'owner_org': owner_org['id']
+        }
+
+        harvest_source = self._create_harvest_source(url, **kwargs)
+
+        # First run, create the dataset with the resource
+        self._run_full_job(harvest_source['id'], num_objects=1)
+
+        # Run the jobs to mark the previous one as Finished
+        self._run_jobs()
+
+        # get the created dataset
+        fq = "+type:dataset harvest_source_id:{0}".format(harvest_source['id'])
+        results = helpers.call_action('package_search', {}, fq=fq)
+        assert results['count'] == 1
+
+        # make it private
+        existing_dataset = helpers.call_action(
+            'package_update',
+            id=results['results'][0]['id'],
+            private=True,
+            owner_org=owner_org['id']
+        )
+
+        # Run a second job
+        self._run_full_job(harvest_source['id'])
+
+        # get the updated dataset
+        new_results = helpers.call_action('package_search',
+                                          fq=fq, include_private=True)
+        assert new_results['count'] == 1
+
+        new_dataset = new_results['results'][0]
+
+        assert existing_dataset['private'] == new_dataset['private']
+
 
     def test_harvest_update_new_resources(self):
 
