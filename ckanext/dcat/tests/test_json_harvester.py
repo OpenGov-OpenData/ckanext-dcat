@@ -100,6 +100,7 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
                                   self.json_content_type,
                                   exp_titles=['Example dataset 1', 'Example dataset 2'])
 
+    @pytest.mark.ckan_config('ckanext.harvest.user_name', 'harvest_user')
     @responses.activate
     def _test_harvest_create(
         self, url, content, content_type, num_datasets=2,
