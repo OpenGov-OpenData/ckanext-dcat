@@ -3,8 +3,6 @@ from builtins import object
 
 import responses
 import pytest
-from ckan.common import config
-from ckan.model import meta
 
 try:
     from unittest.mock import patch
@@ -144,6 +142,7 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
 
+    @pytest.mark.ckan_config('ckanext.harvest.user_name', 'harvest_user')
     @responses.activate
     def test_harvest_update_existing_dataset(self):
         content = '''
