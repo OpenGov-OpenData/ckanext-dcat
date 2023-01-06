@@ -142,7 +142,6 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
 
-    @pytest.mark.ckan_config('ckanext.harvest.user_name', 'harvest_user')
     @responses.activate
     def test_harvest_update_existing_dataset(self):
         content = '''
@@ -176,16 +175,12 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         responses.add(responses.GET, url,
                       body=content,
                       content_type=content_type)
-        admin_user = factories.Sysadmin(name='harvest_user')
         user = factories.User()
         owner_org = factories.Organization(user=user)
         # Mock an update in the remote dataset.
         # Change title just to be sure we harvest ok
         content_second_harvest = \
             content.replace('Example dataset 1', 'Example dataset 1 (updated)')
-
-        content_second_harvest = \
-            content_second_harvest.replace('ORG_NAME', owner_org['name'])
 
         responses.add(responses.GET, url,
                       body=content_second_harvest,
