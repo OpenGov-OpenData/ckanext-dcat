@@ -210,7 +210,7 @@ class DCATHarvester(HarvesterBase):
             log.error('Found more than one dataset with the same guid: {0}'
                       .format(guid))
 
-        return p.toolkit.get_action('package_show')({}, {'id': datasets[0][0]})
+        return p.toolkit.get_action('package_show')({'ignore_auth': True}, {'id': datasets[0][0]})
 
     # Start hooks
 
