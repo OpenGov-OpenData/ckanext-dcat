@@ -1,7 +1,9 @@
 from past.builtins import basestring
+import json
 import logging
 import mimetypes
 import re
+import six
 from ckan.common import config
 
 
@@ -40,15 +42,9 @@ def dcat_to_ckan(dcat_dict):
     elif isinstance(dcat_publisher, dict) and dcat_publisher.get('source'):
         package_dict['extras'].append({'key': 'dcat_publisher_name', 'value': dcat_publisher.get('source')})
 
-    bbox = dcat_dict.get('spatial','').split(',')
-    if len(bbox) == 4:
-        point_a = '[{},{}]'.format(bbox[0], bbox[1])
-        point_b = '[{},{}]'.format(bbox[0], bbox[3])
-        point_c = '[{},{}]'.format(bbox[2], bbox[3])
-        point_d = '[{},{}]'.format(bbox[2], bbox[1])
-        coordinates = '[{},{},{},{},{}]'.format(point_a, point_b, point_c, point_d, point_a)
-        bbox_str = '{\"type\": \"Polygon\", \"coordinates\": [' + coordinates + ']}'
-        package_dict['extras'].append({"key": "spatial", "value": bbox_str})
+    bbox_geojson = get_bbox_geojson(dcat_dict.get('spatial'))
+    if bbox_geojson:
+        package_dict['extras'].append({"key": "spatial", "value": bbox_geojson})
 
     #package_dict['extras'].append({
     #    'key': 'language',
@@ -178,3 +174,29 @@ def convert_to_filter_list(filter_string):
     except Exception as e:
         log.error(e)
     return format_list
+
+
+def get_bbox_geojson(spatial):
+    if isinstance(spatial, six.string_types):
+        bbox = spatial.split(',')
+        if len(bbox) == 4:
+            point_a = '[{},{}]'.format(bbox[0], bbox[1])
+            point_b = '[{},{}]'.format(bbox[0], bbox[3])
+            point_c = '[{},{}]'.format(bbox[2], bbox[3])
+            point_d = '[{},{}]'.format(bbox[2], bbox[1])
+            coordinates = '[{},{},{},{},{}]'.format(point_a, point_b, point_c, point_d, point_a)
+            bbox_str = '{\"type\": \"Polygon\", \"coordinates\": [' + coordinates + ']}'
+            return bbox_str
+    elif isinstance(spatial, dict):
+        spatial_type = spatial.get('type', '')
+        spatial_coordinates = spatial.get('coordinates')
+        if spatial_type.lower() in ['point', 'polygon'] and isinstance(spatial_coordinates, list):
+            return json.dumps(spatial)
+        elif spatial_type.lower() == 'envelope' and isinstance(spatial_coordinates, list):
+            point_a = '[{},{}]'.format(spatial_coordinates[0][0], spatial_coordinates[0][1])
+            point_b = '[{},{}]'.format(spatial_coordinates[0][0], spatial_coordinates[1][1])
+            point_c = '[{},{}]'.format(spatial_coordinates[1][0], spatial_coordinates[1][1])
+            point_d = '[{},{}]'.format(spatial_coordinates[1][0], spatial_coordinates[0][1])
+            coordinates = '[{},{},{},{},{}]'.format(point_a, point_b, point_c, point_d, point_a)
+            bbox_str = '{\"type\": \"Polygon\", \"coordinates\": [' + coordinates + ']}'
+            return bbox_str

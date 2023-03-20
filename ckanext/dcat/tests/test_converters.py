@@ -47,3 +47,38 @@ def test_dcat_to_ckan():
 
     assert ckan_dict == expected_ckan_dict,_poor_mans_dict_diff(
         expected_ckan_dict, ckan_dict)
+
+def test_get_bbox_geojson():
+    spatial_string = '-124.4820,32.5288,-114.1312,42.0095'
+    bbox_geojson_1 = converters.get_bbox_geojson(spatial_string)
+    assert bbox_geojson_1 == ('{"type": "Polygon", "coordinates": [['
+        '[-124.4820,32.5288],[-124.4820,42.0095],'
+        '[-114.1312,42.0095],[-114.1312,32.5288],'
+        '[-124.4820,32.5288]]]}'
+    )
+
+    spatial_envelope = {
+        "type": "envelope",
+        "coordinates": [[-124.1986, 32.5586], [-71.3508, 47.299 ]]
+    }
+    bbox_geojson_2 = converters.get_bbox_geojson(spatial_envelope)
+    assert bbox_geojson_2 == ('{"type": "Polygon", "coordinates": [['
+        '[-124.1986,32.5586],[-124.1986,47.299],'
+        '[-71.3508,47.299],[-71.3508,32.5586],'
+        '[-124.1986,32.5586]]]}'
+    )
+
+    spatial_polygon = {
+        "type": "Polygon",
+        "coordinates": [[
+            [-124.1610, 32.5718], [-124.1610, 41.3149],
+            [-115.5028, 41.3149], [-115.5028, 32.5718],
+            [-124.1610, 32.5718]
+        ]]
+    }
+    bbox_geojson_3 = converters.get_bbox_geojson(spatial_polygon)
+    assert bbox_geojson_3 == ('{"type": "Polygon", "coordinates": [['
+        '[-124.161, 32.5718], [-124.161, 41.3149], '
+        '[-115.5028, 41.3149], [-115.5028, 32.5718], '
+        '[-124.161, 32.5718]]]}'
+    )
