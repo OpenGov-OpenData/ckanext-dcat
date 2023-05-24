@@ -1,3 +1,4 @@
+import six
 from builtins import str
 from past.builtins import basestring
 import json
@@ -70,6 +71,13 @@ class DCATJSONHarvester(DCATHarvester):
 
             # Get identifier
             guid = dataset.get('identifier')
+            parsed_url = six.moves.urllib.parse.urlparse(guid)
+            parsed_query = six.moves.urllib.parse.parse_qs(parsed_url.query)
+            if parsed_query.get('id'):
+                guid = parsed_query.get('id')[0]
+            log.debug('-'*100)
+            log.debug(guid)
+
             if not guid:
                 # This is bad, any ideas welcomed
                 guid = sha1(as_string).hexdigest()

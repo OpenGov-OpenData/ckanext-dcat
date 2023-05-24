@@ -142,6 +142,23 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
 
+    def test_harvest_update_existing_resources_id_in_url(self):
+
+        content1 = self.json_content_with_distribution
+        content1.replace('"identifier": "http://example.com/datasets/example1"',
+                         '"identifier": "http://example.com/item.html?id=someid&sublayer=0"')
+        content2 = self.json_content_with_distribution
+        content1.replace('"identifier": "http://example.com/datasets/example1"',
+                         '"identifier": "http://example.com/item.html?id=someid&sublayer=1"')
+        existing_resources, new_resources = \
+            self._test_harvest_twice(content1, content2)
+
+        # number of resources unchanged
+        assert len(existing_resources) == 1
+        assert len(new_resources) == 1
+        # because the resource metadata is unchanged, the ID is kept the same
+        assert new_resources[0]['id'] == existing_resources[0]['id']
+
     @responses.activate
     def test_harvest_update_existing_dataset(self):
         content = '''
