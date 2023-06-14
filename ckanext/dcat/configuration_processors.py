@@ -217,7 +217,8 @@ class MappingFields(BaseConfigProcessor):
                 source_field = map_field.get('source')
                 target_field = map_field.get('target')
                 default_value = map_field.get('default')
-                value = dcat_dict.get(source_field, default_value)
+
+                value = dcat_dict.get(source_field) if dcat_dict.get(source_field) else default_value
 
                 # If value is a list, convert to string
                 if isinstance(value, list):
