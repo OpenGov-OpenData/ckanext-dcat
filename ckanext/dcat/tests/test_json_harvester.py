@@ -133,14 +133,74 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
     def test_harvest_update_existing_resources(self):
 
         content = self.json_content_with_distribution
-        existing_resources, new_resources = \
+        existing_dataset, new_dataset = \
             self._test_harvest_twice(content, content)
+        existing_resources = existing_dataset.get('resources')
+        new_resources = new_dataset.get('resources')
 
         # number of resources unchanged
         assert len(existing_resources) == 1
         assert len(new_resources) == 1
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
+
+    def test_harvest_update_existing_resources_id_in_url(self):
+
+        content1 = self.json_content_with_distribution
+        content1 = content1.replace('"identifier": "http://example.com/datasets/example1"',
+                         '"identifier": "http://example.com/item.html?id=someid&sublayer=0"')
+        content2 = self.json_content_with_distribution
+        content2 = content2.replace('"identifier": "http://example.com/datasets/example1"',
+                         '"identifier": "http://example.com/item.html?id=someid&sublayer=1"')
+        existing_dataset, new_dataset = self._test_harvest_twice(content1, content2)
+
+        # because the dataset identifier is unchanged
+        assert existing_dataset['id'] == new_dataset['id']
+
+    def test_harvest_update_existing_resources_with_null_id_in_url(self):
+
+        json_content_with_distribution = '''
+        {
+          "dataset":[
+            {"@type": "dcat:Dataset",
+             "identifier": "http://example.com/item.html?id=null",
+             "title": "Example dataset 1",
+             "description": "Lots of species",
+             "publisher": {"name": "Example Department of Wildlife"},
+             "license": "https://example.com/license",
+             "distribution":[
+               {"@type":"dcat:Distribution",
+                "title":"Example resource 1",
+                "format":"Web page",
+                "mediaType":"text/html",
+                "accessURL":"http://example.com/datasets/example1"}
+              ]
+            },
+            {"@type": "dcat:Dataset",
+             "identifier": "http://example.com/item.html?id=None",
+             "title": "Example dataset 1",
+             "description": "Lots of species",
+             "publisher": {"name": "Example Department of Wildlife"},
+             "license": "https://example.com/license",
+             "distribution":[
+               {"@type":"dcat:Distribution",
+                "title":"Example resource 1",
+                "format":"Web page",
+                "mediaType":"text/html",
+                "accessURL":"http://example.com/datasets/example2"}
+              ]
+            }
+          ]
+        }
+                '''
+
+        self._test_harvest_create(
+            'http://some.dcat.file.json',
+            json_content_with_distribution,
+            self.json_content_type,
+            exp_titles=['Example dataset 1', 'Example dataset 2'],
+            num_datasets=2,
+            exp_num_datasets=2)
 
     @responses.activate
     def test_harvest_update_existing_dataset(self):
@@ -236,9 +296,10 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         content_modified = content.replace(
             '"accessURL":"http://example.com/datasets/example1"',
             '"accessURL":"http://example.com/datasets/new"')
-        existing_resources, new_resources = \
+        existing_dataset, new_dataset = \
             self._test_harvest_twice(content, content)
-
+        existing_resources = existing_dataset.get('resources')
+        new_resources = new_dataset.get('resources')
         # number of resources unchanged
         assert len(existing_resources) == 1
         assert len(new_resources) == 1
@@ -287,8 +348,6 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         assert results['count'] == 1
 
         existing_dataset = results['results'][0]
-        existing_resources = existing_dataset.get('resources')
-
 
         # Run a second job
         self._run_full_job(harvest_source['id'])
@@ -298,12 +357,11 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         assert new_results['count'] == 1
 
         new_dataset = new_results['results'][0]
-        new_resources = new_dataset.get('resources')
 
         assert existing_dataset['title'] == 'Example dataset 1'
         assert new_dataset['title'] == 'Example dataset 1 (updated)'
 
-        return (existing_resources, new_resources)
+        return existing_dataset, new_dataset
 
     def test_harvest_does_not_create_with_invalid_tags(self):
         self._test_harvest_create(

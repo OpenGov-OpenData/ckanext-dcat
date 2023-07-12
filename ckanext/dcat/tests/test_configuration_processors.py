@@ -240,6 +240,54 @@ class TestMappingFields:
 
     processor = MappingFields
 
+    def test_modify_package_with_empty_description_values(self):
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "default": "No Description",
+                    "source": "description",
+                    "target": "notes"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "description": ""
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["notes"] == "No Description"
+
+    def test_modify_package_with_no_description_values(self):
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "default": "No Description",
+                    "source": "description",
+                    "target": "notes"
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["notes"] == "No Description"
+
+
     def test_validation_correct_format(self):
         list_of_dicts_config = {
             "map_fields": [
