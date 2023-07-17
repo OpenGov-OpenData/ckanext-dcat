@@ -181,6 +181,10 @@ class DefaultValues(BaseConfigProcessor):
                 raise ValueError('default_values must be a *list* of dictionaries')
             if config_obj['default_values'] and not isinstance(config_obj['default_values'][0], dict):
                 raise ValueError('default_values must be a *list* of dictionaries')
+            for default_field in config_obj.get('default_values', []):
+                for key in default_field:
+                    if key in ['id', 'name']:
+                        raise ValueError('default_values cannot be used to modify dataset id/name')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -207,6 +211,9 @@ class MappingFields(BaseConfigProcessor):
                 raise ValueError('map_fields must be a *list* of dictionaries')
             if config_obj['map_fields'] and not isinstance(config_obj['map_fields'][0], dict):
                 raise ValueError('map_fields must be a *list* of dictionaries')
+            for map_field in config_obj.get('map_fields', []):
+                if map_field.get('target', '') in ['id', 'name']:
+                    raise ValueError('map_fields cannot be used to modify dataset id/name')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -265,6 +272,8 @@ class Publisher(BaseConfigProcessor):
         if 'publisher' in config_obj:
             if not isinstance(config_obj['publisher'], dict):
                 raise ValueError('publisher must be a dictionary')
+            if config_obj.get('publisher', {}).get('publisher_field', '') in ['id', 'name']:
+                raise ValueError('publisher cannot be used to modify dataset id/name')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -288,6 +297,10 @@ class ContactPoint(BaseConfigProcessor):
         if 'contact_point' in config_obj:
             if not isinstance(config_obj['contact_point'], dict):
                 raise ValueError('contact_point must be a dictionary')
+            if config_obj.get('contact_point', {}).get('name_field', '') in ['id', 'name']:
+                raise ValueError('contact_point name_field cannot be used to modify dataset id/name')
+            if config_obj.get('contact_point', {}).get('email_field', '') in ['id', 'name']:
+                raise ValueError('contact_point email_field cannot be used to modify dataset id/name')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
