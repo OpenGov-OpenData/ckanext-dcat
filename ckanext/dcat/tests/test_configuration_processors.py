@@ -216,6 +216,30 @@ class TestDefaultValues:
         except ValueError:
             assert True
 
+    def test_validation_do_not_set_dataset_id(self):
+        id_config = {
+            "default_values": [
+                { "id": "Dataset ID" }
+            ]
+        }
+        try:
+            self.processor.check_config(id_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_dataset_name(self):
+        name_config = {
+            "default_values": [
+                { "name": "Dataset Name" }
+            ]
+        }
+        try:
+            self.processor.check_config(name_config)
+            assert False
+        except ValueError:
+            assert True
+
     def test_modify_package_values(self):
         package = {
             "title": "Test Dataset",
@@ -287,7 +311,6 @@ class TestMappingFields:
 
         assert package["notes"] == "No Description"
 
-
     def test_validation_correct_format(self):
         list_of_dicts_config = {
             "map_fields": [
@@ -322,6 +345,38 @@ class TestMappingFields:
         }
         try:
             self.processor.check_config(dict_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_dataset_id(self):
+        id_config = {
+            "map_fields": [
+                {
+                    "source": "description",
+                    "target": "id",
+                    "default": "Dataset ID"
+                }
+            ]
+        }
+        try:
+            self.processor.check_config(id_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_dataset_name(self):
+        name_config = {
+            "map_fields": [
+                {
+                    "source": "description",
+                    "target": "name",
+                    "default": "Dataset Name"
+                }
+            ]
+        }
+        try:
+            self.processor.check_config(name_config)
             assert False
         except ValueError:
             assert True
@@ -480,6 +535,32 @@ class TestPublisher:
         except ValueError:
             assert True
 
+    def test_validation_do_not_set_dataset_id(self):
+        id_config = {
+            "publisher": {
+                "publisher_field": "id",
+                "default_publisher": "Open Data"
+            }
+        }
+        try:
+            self.processor.check_config(id_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_dataset_name(self):
+        name_config = {
+            "publisher": {
+                "publisher_field": "name",
+                "default_publisher": "Open Data"
+            }
+        }
+        try:
+            self.processor.check_config(name_config)
+            assert False
+        except ValueError:
+            assert True
+
     def test_modify_package_publisher_field(self):
         package = {
             "title": "Test Dataset",
@@ -542,6 +623,66 @@ class TestContactPoint:
         }
         try:
             self.processor.check_config(list_of_dicts_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_contact_name_to_dataset_id(self):
+        id_config = {
+            "contact_point": {
+                "name_field": "id",
+                "default_name": "nonameprovided",
+                "email_field": "contact_email",
+                "default_email": "noemailprovided@agency.gov"
+            }
+        }
+        try:
+            self.processor.check_config(id_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_contact_name_to_dataset_name(self):
+        name_config = {
+            "contact_point": {
+                "name_field": "name",
+                "default_name": "nonameprovided",
+                "email_field": "contact_email",
+                "default_email": "noemailprovided@agency.gov"
+            }
+        }
+        try:
+            self.processor.check_config(name_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_contact_email_to_dataset_id(self):
+        id_config = {
+            "contact_point": {
+                "name_field": "contact_name",
+                "default_name": "nonameprovided",
+                "email_field": "id",
+                "default_email": "noemailprovided@agency.gov"
+            }
+        }
+        try:
+            self.processor.check_config(id_config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_validation_do_not_set_contact_name_to_dataset_name(self):
+        name_config = {
+            "contact_point": {
+                "name_field": "contact_name",
+                "default_name": "nonameprovided",
+                "email_field": "name",
+                "default_email": "noemailprovided@agency.gov"
+            }
+        }
+        try:
+            self.processor.check_config(name_config)
             assert False
         except ValueError:
             assert True
