@@ -6,6 +6,7 @@ import uuid
 import simplejson as json
 import re
 import operator
+import six
 
 import datetime
 from dateutil.parser import parse as parse_date
@@ -540,3 +541,18 @@ def is_dcat_modified_field_changed(old_package_dict, new_package_dict):
     if old_dcat_modified != new_dcat_modified:
         return True
     return False
+
+
+def parse_identifier(identifier):
+    '''
+    Parse identifier as a url and get id
+    '''
+    guid = identifier
+    try:
+        parsed_url = six.moves.urllib.parse.urlparse(identifier)
+        parsed_query = six.moves.urllib.parse.parse_qs(parsed_url.query)
+        if parsed_query.get('id'):
+            guid = parsed_query.get('id')[0]
+    except Exception:
+        guid = identifier
+    return guid

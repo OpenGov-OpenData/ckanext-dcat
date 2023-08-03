@@ -49,6 +49,19 @@ class BaseConfigProcessor:
         raise NotImplementedError
 
 
+class ParseID(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'parse_id_if_url' in config_obj:
+            if not isinstance(config_obj['parse_id_if_url'], bool):
+                raise ValueError('parse_id_if_url must be boolean')
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
+
+
 class DefaultTags(BaseConfigProcessor):
 
     @staticmethod

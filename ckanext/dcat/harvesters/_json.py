@@ -1,4 +1,3 @@
-import six
 from builtins import str
 from past.builtins import basestring
 import json
@@ -71,13 +70,10 @@ class DCATJSONHarvester(DCATHarvester):
 
             # Get identifier
             guid = dataset.get('identifier')
-            try:
-                parsed_url = six.moves.urllib.parse.urlparse(guid)
-                parsed_query = six.moves.urllib.parse.parse_qs(parsed_url.query)
-                if parsed_query.get('id'):
-                    guid = parsed_query.get('id')[0]
-            except Exception:
-                guid = dataset.get('identifier')
+
+            if self.config.get('parse_id_if_url'):
+                # Get id from identifier if it is a url
+                guid = utils.parse_identifier(dataset.get('identifier'))
 
             if not guid:
                 # This is bad, any ideas welcomed
