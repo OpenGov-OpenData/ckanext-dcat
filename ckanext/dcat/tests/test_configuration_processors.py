@@ -2,6 +2,7 @@ import json
 import os
 
 from ckanext.dcat.configuration_processors import (
+    ParseID,
     DefaultTags, CleanTags,
     DefaultGroups, DefaultExtras, DefaultValues,
     MappingFields, Publisher, ContactPoint,
@@ -9,6 +10,39 @@ from ckanext.dcat.configuration_processors import (
     ResourceFormatOrder,
     KeepExistingResources
 )
+
+
+class TestParseID:
+
+    processor = ParseID
+
+    def test_validation_correct_format(self):
+        config = {
+            "parse_id_if_url": True
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        empty_config = {
+            "parse_id_if_url": ""
+        }
+        try:
+            self.processor.check_config(empty_config)
+            assert False
+        except ValueError:
+            assert True
+
+        string_config = {
+            "parse_id_if_url": "enabled"
+        }
+        try:
+            self.processor.check_config(string_config)
+            assert False
+        except ValueError:
+            assert True
 
 
 class TestDefaultTags:

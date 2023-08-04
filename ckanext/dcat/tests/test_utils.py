@@ -2,7 +2,8 @@ from ckanext.dcat.utils import parse_accept_header
 from ckanext.dcat.utils import (
     parse_date_iso_format,
     is_xloader_format,
-    is_dcat_modified_field_changed
+    is_dcat_modified_field_changed,
+    parse_identifier
 )
 
 
@@ -304,3 +305,37 @@ class TestIsDcatModifiedFieldChanged(object):
         }
         changed_dcat_modified = is_dcat_modified_field_changed(old_package_dict, new_package_dict)
         assert not changed_dcat_modified
+
+
+class TestParseID(object):
+    def test_parse_id_in_url_found(self):
+        dataset_1 = {
+            'identifier': 'http://example.com/item.html?id=someid&sublayer=0',
+            'title': 'Dataset 1'
+        }
+        guid_1 = parse_identifier(dataset_1.get('identifier'))
+        assert guid_1 == 'someid'
+
+    def test_parse_id_in_url_null(self):
+        dataset_2 = {
+            'identifier': 'http://example.com/item.html?id=null&sublayer=0',
+            'title': 'Dataset 2'
+        }
+        guid_2 = parse_identifier(dataset_2.get('identifier'))
+        assert guid_2 == 'null'
+
+    def test_parse_id_in_url_none(self):
+        dataset_3 = {
+            'identifier': 'http://example.com/item.html?id=none&sublayer=0',
+            'title': 'Dataset 3'
+        }
+        guid_3 = parse_identifier(dataset_3.get('identifier'))
+        assert guid_3 == 'none'
+
+    def test_parse_id_in_url_not_found(self):
+        dataset_4 = {
+            'identifier': 'http://example.com/item.html?id=&sublayer=0',
+            'title': 'Dataset 4'
+        }
+        guid_4 = parse_identifier(dataset_4.get('identifier'))
+        assert guid_4 == 'http://example.com/item.html?id=&sublayer=0'
