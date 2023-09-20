@@ -399,3 +399,16 @@ class KeepExistingResources(BaseConfigProcessor):
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
         pass
+
+
+class UploadToDatastore(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'upload_to_datastore' in config_obj:
+            if not isinstance(config_obj.get('upload_to_datastore'), bool):
+                raise ValueError('upload_to_datastore must be boolean')
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
