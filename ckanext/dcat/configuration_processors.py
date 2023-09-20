@@ -1,6 +1,7 @@
 from builtins import str
 from past.builtins import basestring
 import re
+import json
 
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -276,6 +277,45 @@ class MappingFields(BaseConfigProcessor):
                 existing_extra = get_extra(target_field, package_dict)
                 if existing_extra:
                     package_dict['extras'].remove(existing_extra)
+
+
+class CompositeMapping(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'composite_field_mapping' in config_obj:
+            if 'composite' not in p.toolkit.g.plugins:
+                raise ValueError('The composite extension is not enabled')
+            if not isinstance(config_obj['composite_field_mapping'], list):
+                raise ValueError('composite_field_mapping must be a *list* of dictionaries')
+            if config_obj['composite_field_mapping'] and not isinstance(config_obj['composite_field_mapping'][0], dict):
+                raise ValueError('composite_field_mapping must be a *list* of dictionaries')
+            try:
+                schema_result = get_action('scheming_dataset_schema_show')({}, {'type': 'dataset'})
+                dataset_schema = schema_result.get('dataset_fields')
+            except:
+                pass
+            for composite_map in config_obj.get('composite_field_mapping', []):
+                field_found = False
+                field_name = list(composite_map)[0]
+                for dataset_field in dataset_schema:
+                    if dataset_field['field_name'] == field_name:
+                        field_found = True
+                        if dataset_field['preset'] != 'composite':
+                            raise ValueError('The field {} must be a composite field'.format(field_name))
+                if not field_found:
+                    raise ValueError('The field {} was not found in the dataset schema'.format(field_name))
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        composite_mapping = config.get('composite_field_mapping', [])
+        for composite_map in composite_mapping:
+            field_name = list(composite_map)[0]
+            value_dict = {}
+            for subfield in list(composite_map.get(field_name)):
+                mapped_field = composite_map.get(field_name).get(subfield)
+                value_dict[subfield] = dcat_dict.get(mapped_field)
+            package_dict[field_name] = json.dumps(value_dict, ensure_ascii=False)
 
 
 class Publisher(BaseConfigProcessor):

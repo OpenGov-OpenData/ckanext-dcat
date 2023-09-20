@@ -20,7 +20,8 @@ from ckan.lib.helpers import json
 from ckanext.dcat.configuration_processors import (
     DefaultTags, CleanTags,
     DefaultGroups, DefaultExtras, DefaultValues,
-    MappingFields, Publisher, ContactPoint,
+    MappingFields, CompositeMapping, Publisher,
+    ContactPoint,
     OrganizationFilter,
     ResourceFormatOrder,
     KeepExistingResources
@@ -45,6 +46,7 @@ class DCATHarvester(HarvesterBase):
         DefaultExtras,
         DefaultValues,
         MappingFields,
+        CompositeMapping,
         Publisher,
         ContactPoint,
         OrganizationFilter,
