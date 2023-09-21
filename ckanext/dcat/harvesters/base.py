@@ -23,7 +23,8 @@ from ckanext.dcat.configuration_processors import (
     MappingFields, Publisher, ContactPoint,
     OrganizationFilter,
     ResourceFormatOrder,
-    KeepExistingResources
+    KeepExistingResources,
+    UploadToDatastore
 )
 
 
@@ -49,7 +50,8 @@ class DCATHarvester(HarvesterBase):
         ContactPoint,
         OrganizationFilter,
         ResourceFormatOrder,
-        KeepExistingResources
+        KeepExistingResources,
+        UploadToDatastore
     ]
 
     def _get_content_and_type(self, url, harvest_job, page=1,

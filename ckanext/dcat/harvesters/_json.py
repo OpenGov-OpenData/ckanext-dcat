@@ -330,18 +330,17 @@ class DCATJSONHarvester(DCATHarvester):
                 package_id = p.toolkit.get_action(action)(context, package_dict)
                 log.info('%s dataset with id %s', message_status, package_id)
 
-            # Submit to xloader if dcat_modified date is different since resource urls may not change
-            if status == 'change':
-                dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
-                if dcat_modified_changed:
-                    for resource in package_dict.get('resources'):
-                        if utils.is_xloader_format(resource.get('format')) and resource.get('id'):
-                            try:
-                                log.debug('Submitting harvested resource {0} to be xloadered'.format(resource['id']))
-                                p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id']})
-                            except p.toolkit.ValidationError as e:
-                                log.debug(e)
-                                pass
+                # Upload tabular resources to datastore
+                upload_to_datastore = self.config.get('upload_to_datastore', True)
+                if upload_to_datastore:
+                    if status == 'new':
+                        new_package_dict = p.toolkit.get_action('package_show')(context, {'id': package_id})
+                        upload_resources_to_datastore(context, new_package_dict)
+                    if status == 'change':
+                        # Submit to xloader if dcat_modified date is different since resource urls may not change
+                        dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
+                        if dcat_modified_changed:
+                            upload_resources_to_datastore(context, package_dict)
 
         except Exception as e:
             dataset = json.loads(harvest_object.content)
@@ -424,3 +423,13 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
         pass
     if 'private' in existing_dataset.keys():
         harvested_dataset['private'] = existing_dataset['private']
+
+def upload_resources_to_datastore(context, package_dict):
+    for resource in package_dict.get('resources'):
+        if utils.is_xloader_format(resource.get('format')) and resource.get('id'):
+            try:
+                log.info('Submitting harvested resource {0} to be xloadered'.format(resource['id']))
+                p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id'], 'ignore_hash': False})
+            except p.toolkit.ValidationError as e:
+                log.debug(e)
+                pass

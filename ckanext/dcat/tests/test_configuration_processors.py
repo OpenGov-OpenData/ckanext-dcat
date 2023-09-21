@@ -8,7 +8,8 @@ from ckanext.dcat.configuration_processors import (
     MappingFields, Publisher, ContactPoint,
     OrganizationFilter,
     ResourceFormatOrder,
-    KeepExistingResources
+    KeepExistingResources,
+    UploadToDatastore
 )
 
 
@@ -823,6 +824,30 @@ class TestKeepExistingResources:
     def test_validation_wrong_format(self):
         config = {
             "keep_existing_resources": "true"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+
+
+class UploadToDatastore:
+
+    processor = UploadToDatastore
+
+    def test_validation_correct_format(self):
+        config = {
+            "upload_to_datastore": True
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        config = {
+            "upload_to_datastore": "true"
         }
         try:
             self.processor.check_config(config)
