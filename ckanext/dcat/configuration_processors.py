@@ -284,8 +284,6 @@ class CompositeMapping(BaseConfigProcessor):
     @staticmethod
     def check_config(config_obj):
         if 'composite_field_mapping' in config_obj:
-            if 'composite' not in p.toolkit.g.plugins:
-                raise ValueError('The composite extension is not enabled')
             if not isinstance(config_obj['composite_field_mapping'], list):
                 raise ValueError('composite_field_mapping must be a *list* of dictionaries')
             if config_obj['composite_field_mapping'] and not isinstance(config_obj['composite_field_mapping'][0], dict):
