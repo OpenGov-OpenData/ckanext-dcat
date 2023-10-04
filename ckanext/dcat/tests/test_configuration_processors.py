@@ -5,7 +5,8 @@ from ckanext.dcat.configuration_processors import (
     ParseID,
     DefaultTags, CleanTags,
     DefaultGroups, DefaultExtras, DefaultValues,
-    MappingFields, Publisher, ContactPoint,
+    MappingFields, CompositeMapping,
+    Publisher, ContactPoint,
     OrganizationFilter,
     ResourceFormatOrder,
     KeepExistingResources,
@@ -531,6 +532,37 @@ class TestMappingFields:
         self.processor.modify_package_dict(package, config, dcat_dict)
 
         assert package["modified_time"] == "11:16:25.000000Z"
+
+
+class TestCompositeMapping:
+
+    processor = CompositeMapping
+
+    def test_modify_package(self):
+        package = {
+            "title": "Test Dataset 1",
+            "name": "test-dataset-1"
+        }
+
+        config = {
+            "composite_field_mapping": [
+                {
+                    "idInfoCitation": {
+                        "publicationDate": "metadataReviseDate"
+                    }
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset-1",
+            "name": "test-dataset-1",
+            "metadataReviseDate": "2023-01-01T18:35:34.000Z"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["idInfoCitation"] == "{\"publicationDate\": \"2023-01-01T18:35:34.000Z\"}"
+
 
 class TestPublisher:
 
