@@ -335,12 +335,12 @@ class DCATJSONHarvester(DCATHarvester):
                 if upload_to_datastore:
                     if status == 'new':
                         new_package_dict = p.toolkit.get_action('package_show')(context, {'id': package_id})
-                        upload_resources_to_datastore(context, new_package_dict)
+                        upload_resources_to_datastore(context, new_package_dict, dcat_dict)
                     if status == 'change':
                         # Submit to xloader if dcat_modified date is different since resource urls may not change
                         dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
                         if dcat_modified_changed:
-                            upload_resources_to_datastore(context, package_dict)
+                            upload_resources_to_datastore(context, package_dict, dcat_dict)
 
         except Exception as e:
             dataset = json.loads(harvest_object.content)
@@ -424,12 +424,45 @@ def copy_across_resource_ids(existing_dataset, harvested_dataset, config=None):
     if 'private' in existing_dataset.keys():
         harvested_dataset['private'] = existing_dataset['private']
 
-def upload_resources_to_datastore(context, package_dict):
+def upload_resources_to_datastore(context, package_dict, dcat_dict):
     for resource in package_dict.get('resources'):
         if utils.is_xloader_format(resource.get('format')) and resource.get('id'):
+            # Get data dictionary if available and push to datastore
+            push_data_dictionary(context, resource, dcat_dict.get('distribution', []))
+
+            # Submit the resource to be pushed to the datastore
             try:
-                log.info('Submitting harvested resource {0} to be xloadered'.format(resource['id']))
-                p.toolkit.get_action('xloader_submit')(context, {'resource_id': resource['id'], 'ignore_hash': False})
+                log.info('Submitting harvested resource {0} to be xloadered'.format(resource.get('id')))
+                xloader_dict = {
+                    'resource_id': resource.get('id'),
+                    'ignore_hash': False
+                }
+                p.toolkit.get_action('xloader_submit')(context, xloader_dict)
             except p.toolkit.ValidationError as e:
                 log.debug(e)
                 pass
+
+def push_data_dictionary(context, resource, distribution):
+    # Check for resource's data dictionary in the distribution
+    fields = []
+    for dist in distribution:
+        if ((dist.get('downloadURL') == resource.get('url') or dist.get('accessURL') == resource.get('url'))
+                and dist.get('title') == resource.get('name')
+                and dist.get('fields')):
+            fields = dist.get('fields')
+            if len(fields) > 0 and fields[0].get('id') == '_id':
+                del fields[0]  # Remove the first dictionary which is only for ckan row number
+            break
+    # If fields are defined push the data dictionary to datastore
+    if fields:
+        log.info('Pushing data dictionary for resource '.format(resource.get('id')))
+        try:
+            datastore_dict = {
+                'resource_id': resource.get('id'),
+                'fields': fields,
+                'force': True
+            }
+            p.toolkit.get_action('datastore_create')(context, datastore_dict)
+        except p.toolkit.ValidationError as e:
+            log.debug(e)
+            pass
