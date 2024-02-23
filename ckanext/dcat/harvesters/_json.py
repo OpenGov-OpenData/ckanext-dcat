@@ -448,11 +448,18 @@ def push_data_dictionary(context, resource, distribution):
     for dist in distribution:
         if ((dist.get('downloadURL') == resource.get('url') or dist.get('accessURL') == resource.get('url'))
                 and dist.get('title') == resource.get('name')
-                and dist.get('fields')):
-            fields = dist.get('fields')
-            if len(fields) > 0 and fields[0].get('id') == '_id':
-                del fields[0]  # Remove the first dictionary which is only for ckan row number
-            break
+                and dist.get('datastoreMetadata')):
+            try:
+                datastore_response = requests.get(dist.get('datastoreMetadata'), timeout=30)
+                data = datastore_response.json()
+                result = data.get('result', {})
+                fields = result.get('fields', [])
+                if len(fields) > 0 and fields[0].get('id') == '_id':
+                    del fields[0]  # Remove the first dictionary which is only for ckan row number
+                break
+            except Exception as e:
+                log.debug(e)
+                pass
     # If fields are defined push the data dictionary to datastore
     if fields:
         log.info('Pushing data dictionary for resource '.format(resource.get('id')))
