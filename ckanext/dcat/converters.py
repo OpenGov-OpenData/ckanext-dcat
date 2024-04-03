@@ -5,6 +5,7 @@ import mimetypes
 import re
 import six
 from ckan.common import config
+from ckan.plugins import toolkit
 
 
 log = logging.getLogger(__name__)
@@ -50,6 +51,15 @@ def dcat_to_ckan(dcat_dict):
     #    'key': 'language',
     #    'value': ','.join(dcat_dict.get('language', []))
     #})
+
+    if dcat_dict.get('license'):
+        for license in toolkit.get_action('license_list')({}, {}):
+            if license.get('url') == dcat_dict.get('license'):
+                package_dict['license_id'] = license.get('id')
+                break
+            elif license.get('title') == dcat_dict.get('license'):
+                package_dict['license_id'] = license.get('id')
+                break
 
     package_dict['resources'] = []
     for distribution in dcat_dict.get('distribution', []):
