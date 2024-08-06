@@ -1,14 +1,18 @@
 {% ckan_extends %}
 {% block links %}
+
     {{ super() }}
-    {% with endpoint=h.dcat_get_endpoint('dataset')  %}
-        <link rel="alternate" type="text/n3" href="{{ h.url_for(endpoint, _id=pkg.id, _format='n3', _external=True) }}"/>
-        <link rel="alternate" type="text/ttl" href="{{ h.url_for(endpoint, _id=pkg.id, _format='ttl', _external=True) }}"/>
-        <link rel="alternate" type="application/rdf+xml" href="{{ h.url_for(endpoint, _id=pkg.id, _format='xml', _external=True) }}"/>
-        <link rel="alternate" type="application/ld+json" href="{{ h.url_for(endpoint, _id=pkg.id, _format='jsonld', _external=True) }}"/>
-    {% endwith %}
+
+    {% if h.dcat_endpoints_enabled() %}
+      {% with endpoint=h.dcat_get_endpoint('dataset')  %}
+          <link rel="alternate" type="text/n3" href="{{ h.url_for(endpoint, _id=pkg.id, _format='n3', _external=True) }}"/>
+          <link rel="alternate" type="text/turtle" href="{{ h.url_for(endpoint, _id=pkg.id, _format='ttl', _external=True) }}"/>
+          <link rel="alternate" type="application/rdf+xml" href="{{ h.url_for(endpoint, _id=pkg.id, _format='xml', _external=True) }}"/>
+          <link rel="alternate" type="application/ld+json" href="{{ h.url_for(endpoint, _id=pkg.id, _format='jsonld', _external=True) }}"/>
+      {% endwith %}
+    {% endif %}
 {% endblock -%}
-{% block body_extras %}
+{% block scripts %}
   {{ super() }}
   {% block structured_data %}
     {#
@@ -18,7 +22,6 @@
     More information about structured data:
     https://developers.google.com/search/docs/guides/intro-structured-data
     #}
-
       {% if h.helper_available('structured_data') %}
           <script type="application/ld+json">
            {{ h.structured_data(pkg.id)|safe }}

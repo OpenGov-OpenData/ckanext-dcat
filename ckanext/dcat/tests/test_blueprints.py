@@ -4,19 +4,19 @@ from builtins import range
 import time
 
 from collections import OrderedDict
-from six.moves.urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 import pytest
 
 from ckan import plugins as p
 
 from rdflib import Graph
+from ckantoolkit import url_for
 from ckantoolkit.tests import factories
 
 from ckanext.dcat.processors import RDFParser
 from ckanext.dcat.profiles import RDF, DCAT
 from ckanext.dcat.processors import HYDRA
-from ckanext.dcat.urls import url_for
 
 
 def _sort_query_params(url):
@@ -508,12 +508,10 @@ class TestAcceptHeader():
         assert response.headers['Content-Type'] == 'text/html; charset=utf-8'
 
 
+@pytest.mark.skipif(p.toolkit.check_ckan_version(max_version='2.4.99'),
+                    reason='ITranslations not available on CKAN < 2.5')
 @pytest.mark.usefixtures('with_plugins', 'clean_db', 'clean_index')
 class TestTranslations():
-
-    def __init__(self):
-        if p.toolkit.check_ckan_version(max_version='2.4.99'):
-            pytest.skip('ITranslations not available on CKAN < 2.5')
 
     def test_labels_default(self, app):
 

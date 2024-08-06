@@ -60,7 +60,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_dataset_all_fields(self):
 
-        contents = self._get_file_contents('dataset.rdf')
+        contents = self._get_file_contents('dcat/dataset.rdf')
 
         p = RDFParser(profiles=['euro_dcat_ap'])
 
@@ -499,11 +499,8 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
         datasets = [d for d in p.datasets()]
 
         resource = datasets[0]['resources'][0]
-        if toolkit.check_ckan_version(min_version='2.3'):
-            assert resource['format'] == u'CSV'
-            assert resource['mimetype'] == u'text/csv'
-        else:
-            assert resource['format'] == u'text/csv'
+        assert resource['format'] == u'CSV'
+        assert resource['mimetype'] == u'text/csv'
 
     @pytest.mark.ckan_config('ckanext.dcat.normalize_ckan_format', False)
     def test_distribution_format_imt_only_normalize_false(self):
@@ -638,11 +635,8 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
         resource = datasets[0]['resources'][0]
 
-        if toolkit.check_ckan_version(min_version='2.3'):
-            assert resource['format'] == u'CSV'
-            assert resource['mimetype'] == u'text/csv'
-        else:
-            assert resource['format'] == u'Comma Separated Values'
+        assert resource['format'] == u'CSV'
+        assert resource['mimetype'] == u'text/csv'
 
     def test_distribution_format_IMT_field(self):
         g = Graph()
@@ -722,7 +716,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_catalog_xml_rdf(self):
 
-        contents = self._get_file_contents('catalog.rdf')
+        contents = self._get_file_contents('dcat/catalog.rdf')
 
         p = RDFParser(profiles=['euro_dcat_ap'])
 
@@ -741,7 +735,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_dataset_turtle_1(self):
 
-        contents = self._get_file_contents('dataset_deri.ttl')
+        contents = self._get_file_contents('dcat/dataset_deri.ttl')
 
         p = RDFParser(profiles=['euro_dcat_ap'])
 
@@ -763,7 +757,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_dataset_json_ld_1(self):
 
-        contents = self._get_file_contents('catalog_pod.jsonld')
+        contents = self._get_file_contents('dcat/catalog_pod.jsonld')
 
         p = RDFParser(profiles=['euro_dcat_ap'])
 
@@ -793,7 +787,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_dataset_json_ld_with_at_graph(self):
 
-        contents = self._get_file_contents('catalog_with_at_graph.jsonld')
+        contents = self._get_file_contents('dcat/catalog_with_at_graph.jsonld')
 
         p = RDFParser(profiles=['euro_dcat_ap'])
 
@@ -822,7 +816,7 @@ class TestEuroDCATAPProfileParsing(BaseParseTest):
 
     def test_dataset_compatibility_mode(self):
 
-        contents = self._get_file_contents('dataset.rdf')
+        contents = self._get_file_contents('dcat/dataset.rdf')
 
         p = RDFParser(profiles=['euro_dcat_ap'], compatibility_mode=True)
 
