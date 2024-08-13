@@ -1,4 +1,3 @@
-import nose
 from ckantoolkit.tests import helpers
 
 from ckanext.dcat import converters

@@ -312,7 +312,8 @@ class CompositeMapping(BaseConfigProcessor):
             value_dict = {}
             for subfield in list(composite_map.get(field_name)):
                 mapped_field = composite_map.get(field_name).get(subfield)
-                value_dict[subfield] = dcat_dict.get(mapped_field)
+                if dcat_dict.get(mapped_field) and dcat_dict.get(mapped_field) not in ['none', 'null']:
+                    value_dict[subfield] = dcat_dict.get(mapped_field)
             package_dict[field_name] = json.dumps(value_dict, ensure_ascii=False)
 
 

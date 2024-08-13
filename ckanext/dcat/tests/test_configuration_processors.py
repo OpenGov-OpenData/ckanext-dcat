@@ -548,7 +548,7 @@ class TestCompositeMapping:
             "composite_field_mapping": [
                 {
                     "idInfoCitation": {
-                        "publicationDate": "metadataReviseDate"
+                        "publicationDate": "metadataPubDate"
                     }
                 }
             ]
@@ -556,12 +556,37 @@ class TestCompositeMapping:
         dcat_dict = {
             "title": "Test Dataset-1",
             "name": "test-dataset-1",
-            "metadataReviseDate": "2023-01-01T18:35:34.000Z"
+            "metadataPubDate": "2023-01-01T18:35:34.000Z"
         }
 
         self.processor.modify_package_dict(package, config, dcat_dict)
 
         assert package["idInfoCitation"] == "{\"publicationDate\": \"2023-01-01T18:35:34.000Z\"}"
+
+    def test_invalid_value(self):
+        package = {
+            "title": "Test Dataset 2",
+            "name": "test-dataset-2"
+        }
+
+        config = {
+            "composite_field_mapping": [
+                {
+                    "idInfoCitation": {
+                        "publicationDate": "metadataPubDate"
+                    }
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset-2",
+            "name": "test-dataset-2",
+            "metadataPubDate": "null"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["idInfoCitation"] == "{}"
 
 
 class TestPublisher:
