@@ -6,7 +6,6 @@ from builtins import object
 from collections import defaultdict
 import re
 
-import six
 import pytest
 import responses
 try:
@@ -28,13 +27,6 @@ import ckanext.dcat.harvesters.rdf
 
 
 
-
-# TODO move to ckanext-harvest
-@pytest.fixture
-def harvest_setup():
-    harvest_model.setup()
-
-
 @pytest.fixture
 def clean_queues():
     queue.purge_queues()
@@ -48,9 +40,7 @@ def reset_calls_counter():
     return wrapper
 
 
-class TestRDFHarvester(p.SingletonPlugin):
-
-    p.implements(IDCATRDFHarvester)
+class BaseTestRDFHarvester(object):
 
     calls = defaultdict(int)
     # change return values of after_parsing via this parameter
@@ -119,8 +109,14 @@ class TestRDFHarvester(p.SingletonPlugin):
         return package_schema
 
 
-class TestRDFNullHarvester(TestRDFHarvester):
+class TestRDFHarvester(p.SingletonPlugin, BaseTestRDFHarvester):
+
     p.implements(IDCATRDFHarvester)
+
+
+class TestRDFNullHarvester(p.SingletonPlugin, BaseTestRDFHarvester):
+    p.implements(IDCATRDFHarvester)
+
     def before_update(self, harvest_object, dataset_dict, temp_dict):
         super(TestRDFNullHarvester, self).before_update(harvest_object, dataset_dict, temp_dict)
         dataset_dict.clear()
@@ -130,7 +126,7 @@ class TestRDFNullHarvester(TestRDFHarvester):
         dataset_dict.clear()
 
 
-class TestRDFExceptionHarvester(TestRDFHarvester):
+class TestRDFExceptionHarvester(p.SingletonPlugin, BaseTestRDFHarvester):
     p.implements(IDCATRDFHarvester)
 
     raised_exception = False
@@ -625,7 +621,7 @@ class FunctionalHarvestTest(object):
         self._fetch_queue(num_objects)
 
 
-@pytest.mark.usefixtures('with_plugins', 'clean_db', 'clean_index', 'harvest_setup', 'clean_queues')
+@pytest.mark.usefixtures('with_plugins', 'clean_db', 'clean_index', 'clean_queues')
 @pytest.mark.ckan_config('ckan.plugins', 'dcat harvest dcat_rdf_harvester')
 class TestDCATHarvestFunctional(FunctionalHarvestTest):
 
@@ -700,7 +696,7 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
         # this as well
         responses.add(responses.HEAD, self.ttl_mock_url,
                                status=200, content_type=self.ttl_content_type,
-                               adding_headers = {'content-length': six.text_type(actual_file_size)})
+                               adding_headers = {'content-length': str(actual_file_size)})
 
         harvest_source = self._create_harvest_source(self.ttl_mock_url)
         # Create new job for the source
@@ -729,7 +725,7 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
         # this as well  , content_length=file_size
         responses.add(responses.HEAD, self.ttl_mock_url,
                                status=200, content_type=self.ttl_content_type,
-                               adding_headers = {'content-length': six.text_type(actual_file_size)})
+                               adding_headers = {'content-length': str(actual_file_size)})
 
         harvest_source = self._create_harvest_source(self.ttl_mock_url)
         # Create new job for the source
@@ -1048,7 +1044,7 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
 
         assert last_job_status['status'] == 'Finished'
         assert ('Error parsing the RDF file'
-                in last_job_status['gather_error_summary'][0][0])
+                in last_job_status['gather_error_summary'][0]['message'])
 
     @responses.activate
     @patch.object(ckanext.dcat.harvesters.rdf.RDFParser, 'datasets')
@@ -1083,7 +1079,7 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
 
         assert last_job_status['status'] == 'Finished'
         assert ('Error when processsing dataset'
-                in last_job_status['gather_error_summary'][0][0])
+                in last_job_status['gather_error_summary'][0]['message'])
 
     @responses.activate
     def test_harvest_create_duplicate_titles(self):
@@ -1119,7 +1115,6 @@ class TestDCATHarvestFunctional(FunctionalHarvestTest):
     'with_plugins',
     'clean_db',
     'clean_index',
-    'harvest_setup',
     'clean_queues',
 )
 @pytest.mark.ckan_config('ckan.plugins', 'dcat harvest dcat_rdf_harvester test_rdf_harvester')
@@ -1220,8 +1215,8 @@ class TestDCATHarvestFunctionalExtensionPoints(FunctionalHarvestTest):
 
         last_job_status = harvest_source['status']['last_job']
 
-        assert 'Error 1' == last_job_status['gather_error_summary'][0][0]
-        assert 'Error 2' == last_job_status['gather_error_summary'][1][0]
+        assert 'Error 1' == last_job_status['gather_error_summary'][0]['message']
+        assert 'Error 2' == last_job_status['gather_error_summary'][1]['message']
 
     def test_harvest_update_session_extension_point_gets_called(self, reset_calls_counter):
 
@@ -1366,8 +1361,8 @@ class TestDCATHarvestFunctionalExtensionPoints(FunctionalHarvestTest):
 
         last_job_status = harvest_source['status']['last_job']
 
-        assert 'Error 1' == last_job_status['gather_error_summary'][0][0]
-        assert 'Error 2' == last_job_status['gather_error_summary'][1][0]
+        assert 'Error 1' == last_job_status['gather_error_summary'][0]['message']
+        assert 'Error 2' == last_job_status['gather_error_summary'][1]['message']
 
     @responses.activate
     def test_harvest_after_parsing_extension_point_gets_called(self, reset_calls_counter):
@@ -1481,8 +1476,8 @@ class TestDCATHarvestFunctionalExtensionPoints(FunctionalHarvestTest):
 
             last_job_status = harvest_source['status']['last_job']
 
-            assert 'Error 1' == last_job_status['gather_error_summary'][0][0]
-            assert 'Error 2' == last_job_status['gather_error_summary'][1][0]
+            assert 'Error 1' == last_job_status['gather_error_summary'][0]['message']
+            assert 'Error 2' == last_job_status['gather_error_summary'][1]['message']
         finally:
             plugin.after_parsing_mode = ''
 
@@ -1507,7 +1502,6 @@ class TestDCATHarvestFunctionalExtensionPoints(FunctionalHarvestTest):
                                status=405, content_type=content_type)
 
         harvest_source = self._create_harvest_source(url)
-
         # First run, will create two datasets as previously tested
         self._run_full_job(harvest_source['id'], num_objects=2)
 
@@ -1548,7 +1542,6 @@ class TestDCATHarvestFunctionalExtensionPoints(FunctionalHarvestTest):
     'with_plugins',
     'clean_db',
     'clean_index',
-    'harvest_setup',
     'clean_queues',
 )
 @pytest.mark.ckan_config('ckan.plugins', 'dcat harvest dcat_rdf_harvester test_rdf_null_harvester')
@@ -1609,7 +1602,6 @@ class TestDCATHarvestFunctionalSetNull(FunctionalHarvestTest):
     'with_plugins',
     'clean_db',
     'clean_index',
-    'harvest_setup',
     'clean_queues',
 )
 @pytest.mark.ckan_config('ckan.plugins', 'dcat harvest dcat_rdf_harvester test_rdf_exception_harvester')
@@ -1649,7 +1641,7 @@ class TestDCATHarvestFunctionalRaiseExcpetion(FunctionalHarvestTest):
         assert last_job_status['status'] == 'Finished'
 
         assert ('Error importing dataset'
-                in last_job_status['object_error_summary'][0][0])
+                in last_job_status['object_error_summary'][0]['message'])
 
         assert (
             last_job_status['stats'] ==
