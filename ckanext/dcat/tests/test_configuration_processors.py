@@ -533,6 +533,32 @@ class TestMappingFields:
 
         assert package["modified_time"] == "11:16:25.000000Z"
 
+    def test_modify_package_mapping_values_with_extras(self):
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "map_fields": [
+                {
+                    "source": "language",
+                    "target": "language",
+                    "default": "English",
+                    "extras": True
+                }
+            ]
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "language": "Spanish"
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        assert package["extras"][0]["key"] == "language"
+        assert package["extras"][0]["value"] == "Spanish"
+
 
 class TestCompositeMapping:
 
