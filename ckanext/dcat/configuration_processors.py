@@ -1,5 +1,4 @@
 from builtins import str
-from past.builtins import basestring
 import re
 import json
 
@@ -123,7 +122,7 @@ class DefaultGroups(BaseConfigProcessor):
         if 'default_groups' in config_obj:
             if not isinstance(config_obj['default_groups'], list):
                 raise ValueError('default_groups must be a *list* of group names/ids')
-            if config_obj['default_groups'] and not isinstance(config_obj['default_groups'][0], basestring):
+            if config_obj['default_groups'] and not isinstance(config_obj['default_groups'][0], str):
                 raise ValueError('default_groups must be a list of group names/ids (i.e. strings)')
 
             # Check if default groups exist
@@ -159,6 +158,9 @@ class DefaultExtras(BaseConfigProcessor):
         if 'default_extras' in config_obj:
             if not isinstance(config_obj['default_extras'], dict):
                 raise ValueError('default_extras must be a dictionary')
+            for key in config_obj.get('default_extras'):
+                if key == 'guid':
+                    raise ValueError('default_extras cannot be used to modify harvest guid')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -193,9 +195,9 @@ class DefaultValues(BaseConfigProcessor):
         if 'default_values' in config_obj:
             if not isinstance(config_obj['default_values'], list):
                 raise ValueError('default_values must be a *list* of dictionaries')
-            if config_obj['default_values'] and not isinstance(config_obj['default_values'][0], dict):
-                raise ValueError('default_values must be a *list* of dictionaries')
             for default_field in config_obj.get('default_values', []):
+                if not isinstance(default_field, dict):
+                    raise ValueError('default_values must be a *list* of dictionaries')
                 for key in default_field:
                     if key in ['id', 'name']:
                         raise ValueError('default_values cannot be used to modify dataset id/name')
@@ -223,11 +225,19 @@ class MappingFields(BaseConfigProcessor):
         if 'map_fields' in config_obj:
             if not isinstance(config_obj['map_fields'], list):
                 raise ValueError('map_fields must be a *list* of dictionaries')
-            if config_obj['map_fields'] and not isinstance(config_obj['map_fields'][0], dict):
-                raise ValueError('map_fields must be a *list* of dictionaries')
             for map_field in config_obj.get('map_fields', []):
+                if not isinstance(map_field, dict):
+                    raise ValueError('map_fields must be a *list* of dictionaries')
+                if not map_field.get('source'):
+                    raise ValueError('map_fields must have a source field')
+                if not map_field.get('target'):
+                    raise ValueError('map_fields must have a target field')
                 if map_field.get('target', '') in ['id', 'name']:
                     raise ValueError('map_fields cannot be used to modify dataset id/name')
+                if map_field.get('extras') and not isinstance(map_field.get('extras'), bool):
+                    raise ValueError('map_fields extras must be boolean')
+                if map_field.get('extras') and map_field.get('target') == 'guid':
+                    raise ValueError('map_fields extras cannot be used to modify harvest guid')
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -270,13 +280,20 @@ class MappingFields(BaseConfigProcessor):
                             '%Y-%m-%dT%H:%M:%S.%fZ'
                         ).strftime('%H:%M:%S.%fZ')
 
-                # Map value to dataset field
-                package_dict[target_field] = value
+                if not 'extras' in package_dict:
+                    package_dict['extras'] = []
 
                 # Remove from extras any keys present in the config
                 existing_extra = get_extra(target_field, package_dict)
                 if existing_extra:
                     package_dict['extras'].remove(existing_extra)
+
+                if map_field.get('extras', False):
+                    # Map value to extras
+                    package_dict['extras'].append({'key': target_field, 'value': value})
+                else:
+                    # Map value to dataset field
+                    package_dict[target_field] = value
 
 
 class CompositeMapping(BaseConfigProcessor):
@@ -286,14 +303,14 @@ class CompositeMapping(BaseConfigProcessor):
         if 'composite_field_mapping' in config_obj:
             if not isinstance(config_obj['composite_field_mapping'], list):
                 raise ValueError('composite_field_mapping must be a *list* of dictionaries')
-            if config_obj['composite_field_mapping'] and not isinstance(config_obj['composite_field_mapping'][0], dict):
-                raise ValueError('composite_field_mapping must be a *list* of dictionaries')
             try:
                 schema_result = get_action('scheming_dataset_schema_show')({}, {'type': 'dataset'})
                 dataset_schema = schema_result.get('dataset_fields')
             except:
                 pass
             for composite_map in config_obj.get('composite_field_mapping', []):
+                if not isinstance(composite_map, dict):
+                    raise ValueError('composite_field_mapping must be a *list* of dictionaries')
                 field_found = False
                 field_name = list(composite_map)[0]
                 for dataset_field in dataset_schema:
