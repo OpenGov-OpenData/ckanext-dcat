@@ -77,7 +77,7 @@ class DCATJSONHarvester(DCATHarvester):
 
             if not guid:
                 # This is bad, any ideas welcomed
-                guid = sha1(as_string).hexdigest()
+                guid = sha1(as_string.encode('utf-8')).hexdigest()
 
             yield guid, as_string
 

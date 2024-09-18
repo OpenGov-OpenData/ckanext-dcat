@@ -2,7 +2,6 @@ from past.builtins import basestring
 import json
 import logging
 import mimetypes
-import re
 import six
 from ckan.common import config
 from ckan.plugins import toolkit
@@ -150,6 +149,16 @@ def ckan_to_dcat(package_dict):
         }
         dcat_dict['distribution'].append(distribution)
 
+        if resource.get('datastore_active'):
+            data_dictionary_distro = {
+                    'title': 'Data Dictionary'.format(resource.get('name')),
+                    'description': 'Data Dictionary of the {}'.format(resource.get('url')),
+                    'format': 'CSV',
+                    'accessURL': '{}/datastore/dictionary_download/{}'.format(
+                        config.get('ckan.site_url'), resource.get('id')),
+                    'modified': resource.get('metadata_modified', ""),
+                }
+            dcat_dict['distribution'].append(data_dictionary_distro)
     return dcat_dict
 
 
