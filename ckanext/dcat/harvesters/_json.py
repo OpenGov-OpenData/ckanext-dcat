@@ -65,6 +65,8 @@ class DCATJSONHarvester(DCATHarvester):
             elif org_filter_exclude:
                 if dcat_publisher_name in org_filter_exclude:
                     continue
+            # remove unharvestable distros
+            dataset['distribution'] = [distro for distro in dataset.get('distribution', []) if not distro.get('isHarvestable', True)]
 
             as_string = json.dumps(dataset)
 
