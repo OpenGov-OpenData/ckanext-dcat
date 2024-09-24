@@ -151,13 +151,13 @@ def ckan_to_dcat(package_dict):
 
         if resource.get('datastore_active'):
             data_dictionary_distro = {
-                    'title': 'Data Dictionary'.format(resource.get('name')),
-                    'description': 'Data Dictionary of the {}'.format(resource.get('url')),
-                    'format': 'CSV',
-                    'accessURL': '{}/datastore/dictionary_download/{}'.format(
-                        config.get('ckan.site_url'), resource.get('id')),
-                    'modified': resource.get('metadata_modified', ""),
-                }
+                'title': 'Data Dictionary'.format(resource.get('name')),
+                'description': 'Data Dictionary of {}'.format(resource.get('url')),
+                'format': 'CSV',
+                'accessURL': '{}/datastore/dictionary_download/{}'.format(
+                    config.get('ckan.site_url'), resource.get('id')),
+                'modified': resource.get('metadata_modified', ""),
+            }
             dcat_dict['distribution'].append(data_dictionary_distro)
     return dcat_dict
 
