@@ -278,6 +278,18 @@ class DCATJSONHarvester(DCATHarvester):
             if existing_dataset:
                 copy_across_resource_ids(existing_dataset, package_dict, self.config)
 
+        if dcat_dict.get('theme'):
+            if not package_dict.get('groups'):
+                package_dict['groups'] = []
+            existing_groups = []
+            existing_groups = p.toolkit.get_action('group_list')(context, {'all_fields': True})
+            # Check if group exists and add package to it
+            for source_theme in dcat_dict.get('theme', []):
+                for existing_group in existing_groups:
+                    if source_theme.lower() == existing_group.get('title', '').lower():
+                        # Add package to group
+                        package_dict['groups'].extend([{'id': existing_group.get('id'), 'name': existing_group.get('name')}])
+
         # Allow custom harvesters to modify the package dict before creating
         # or updating the package
         package_dict = self.modify_package_dict(package_dict,
@@ -334,6 +346,7 @@ class DCATJSONHarvester(DCATHarvester):
                 upload_to_datastore = self.config.get('upload_to_datastore', True)
                 if upload_to_datastore:
                     if status == 'new':
+                        # Get new package dict to get the new resource ids
                         new_package_dict = p.toolkit.get_action('package_show')(context, {'id': package_id})
                         upload_resources_to_datastore(context, new_package_dict, dcat_dict)
                     if status == 'change':
@@ -341,7 +354,6 @@ class DCATJSONHarvester(DCATHarvester):
                         dcat_modified_changed = utils.is_dcat_modified_field_changed(existing_dataset, package_dict)
                         if dcat_modified_changed:
                             upload_resources_to_datastore(context, package_dict, dcat_dict)
-
         except Exception as e:
             dataset = json.loads(harvest_object.content)
             dataset_name = dataset.get('name', '')

@@ -249,7 +249,16 @@ class MappingFields(BaseConfigProcessor):
                 target_field = map_field.get('target')
                 default_value = map_field.get('default')
 
-                value = dcat_dict.get(source_field) if dcat_dict.get(source_field) else default_value
+                value = None
+
+                if source_field.startswith('publisher.'):
+                    publisher_key = source_field.split('.')[1]
+                    if dcat_dict.get('publisher', {}).get(publisher_key):
+                        value = dcat_dict.get('publisher', {}).get(publisher_key)
+                elif dcat_dict.get(source_field):
+                    value = dcat_dict.get(source_field)
+                else:
+                    value = default_value
 
                 # If value is a list, convert to string
                 if isinstance(value, list):
