@@ -149,7 +149,7 @@ def ckan_to_dcat(package_dict):
         }
         dcat_dict['distribution'].append(distribution)
 
-        if resource.get('datastore_active'):
+        if resource.get('is_data_dict_populated'):
             data_dictionary_distro = {
                 'title': 'Data Dictionary'.format(resource.get('name')),
                 'description': 'Data Dictionary of {}'.format(resource.get('url')),
