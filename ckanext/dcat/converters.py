@@ -151,7 +151,7 @@ def ckan_to_dcat(package_dict):
 
         if resource.get('is_data_dict_populated'):
             data_dictionary_distro = {
-                'title': 'Data Dictionary'.format(resource.get('name')),
+                'title': 'Data Dictionary {}'.format(resource.get('name')),
                 'description': 'Data Dictionary of {}'.format(resource.get('url')),
                 'format': 'CSV',
                 'accessURL': '{}/datastore/dictionary_download/{}'.format(
