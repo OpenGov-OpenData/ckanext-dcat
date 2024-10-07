@@ -249,7 +249,16 @@ class MappingFields(BaseConfigProcessor):
                 target_field = map_field.get('target')
                 default_value = map_field.get('default')
 
-                value = dcat_dict.get(source_field) if dcat_dict.get(source_field) else default_value
+                value = None
+
+                if source_field.startswith('publisher.'):
+                    publisher_key = source_field.split('.')[1]
+                    if dcat_dict.get('publisher', {}).get(publisher_key):
+                        value = dcat_dict.get('publisher', {}).get(publisher_key)
+                elif dcat_dict.get(source_field):
+                    value = dcat_dict.get(source_field)
+                else:
+                    value = default_value
 
                 # If value is a list, convert to string
                 if isinstance(value, list):
@@ -396,6 +405,53 @@ class ContactPoint(BaseConfigProcessor):
             existing_extra = get_extra(email_field, package_dict)
             if existing_extra:
                 package_dict['extras'].remove(existing_extra)
+
+
+class RemoteGroups(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'remote_groups' in config_obj:
+            if config_obj['remote_groups'] not in ('only_local', 'create'):
+                raise ValueError('remote_groups must be either "only_local" or "create"')
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        remote_groups = config.get('remote_groups')
+        if remote_groups not in ('only_local', 'create'):
+            return
+
+        if 'groups' not in package_dict:
+            package_dict['groups'] = []
+
+        # check if remote groups exist locally
+        validated_groups = []
+
+        existing_groups = get_action('group_list')({}, {'all_fields': True})
+        for theme in dcat_dict.get('theme'):
+            found_group = False
+            for existing_group in existing_groups:
+                # Found local group
+                if theme == existing_group.get('title') or theme == existing_group.get('name'):
+                    found_group = True
+                    validated_groups.append({'id': existing_group['id'], 'name': existing_group['name']})
+                    break
+
+            if remote_groups == 'create' and not found_group:
+                # Group does not exist, create it
+                try:
+                    site_user = get_action('get_site_user')({'model': model, 'ignore_auth': True, 'defer_commit': True}, {})
+                    user_name = site_user['name']
+                    group_dict = {
+                        'name': theme,
+                        'title': theme
+                    }
+                    new_group = get_action('group_create')({'model': model, 'user': user_name}, group_dict)
+                    validated_groups.append({'id': new_group['id'], 'name': new_group['name']})
+                except Exception:
+                    pass
+
+        package_dict['groups'].extend(validated_groups)
 
 
 class OrganizationFilter(BaseConfigProcessor):

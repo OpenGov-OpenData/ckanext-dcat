@@ -77,7 +77,7 @@ class DCATJSONHarvester(DCATHarvester):
 
             if not guid:
                 # This is bad, any ideas welcomed
-                guid = sha1(as_string).hexdigest()
+                guid = sha1(as_string.encode('utf-8')).hexdigest()
 
             yield guid, as_string
 
@@ -448,9 +448,9 @@ def push_data_dictionary(context, resource, distribution):
     for dist in distribution:
         if ((dist.get('downloadURL') == resource.get('url') or dist.get('accessURL') == resource.get('url'))
                 and dist.get('title') == resource.get('name')
-                and dist.get('datastoreMetadata')):
+                and 'action/datastore_search' in dist.get('describedBy', '')):
             try:
-                datastore_response = requests.get(dist.get('datastoreMetadata'), timeout=30)
+                datastore_response = requests.get(dist.get('describedBy'), timeout=30)
                 data = datastore_response.json()
                 result = data.get('result', {})
                 fields = result.get('fields', [])
