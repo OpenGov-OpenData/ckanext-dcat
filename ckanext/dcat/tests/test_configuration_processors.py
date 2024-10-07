@@ -1,5 +1,4 @@
-import json
-import os
+from ckantoolkit.tests import factories
 
 from ckanext.dcat.configuration_processors import (
     ParseID,
@@ -7,6 +6,7 @@ from ckanext.dcat.configuration_processors import (
     DefaultGroups, DefaultExtras, DefaultValues,
     MappingFields, CompositeMapping,
     Publisher, ContactPoint,
+    RemoteGroups,
     OrganizationFilter,
     ResourceFormatOrder,
     KeepExistingResources,
@@ -832,6 +832,51 @@ class TestContactPoint:
 
         assert package["contact_name"] == "Jane Doe"
         assert package["contact_email"] == "jane.doe@agency.gov"
+
+
+class TestRemoteGroups:
+
+    processor = RemoteGroups
+
+    def test_validation_correct_format(self):
+        config = {
+            "remote_groups": "only_local"
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        config = {
+            "remote_groups": True
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+
+    def test_modify_package_remote_groups(self):
+        factories.Group(name="climate", title="Climate")
+        factories.Group(name="science", title="Science")
+        package = {
+            "title": "Test Dataset",
+            "name": "test-dataset"
+        }
+        config = {
+            "remote_groups": "only_local"
+        }
+        dcat_dict = {
+            "title": "Test Dataset",
+            "name": "test-dataset",
+            "theme": ["Climate", "Science", "Water"]
+        }
+
+        self.processor.modify_package_dict(package, config, dcat_dict)
+
+        group_names = sorted([group_dict.get("name") for group_dict in package["groups"]])
+        assert group_names == ["climate", "science"]
 
 
 class TestResourceFormatOrder:

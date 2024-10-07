@@ -3,8 +3,7 @@ import json
 import logging
 import mimetypes
 import six
-from ckan.common import config
-from ckan.plugins import toolkit
+from ckan.plugins.toolkit import get_action, asbool, config
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +51,7 @@ def dcat_to_ckan(dcat_dict):
     #})
 
     if dcat_dict.get('license'):
-        for license in toolkit.get_action('license_list')({}, {}):
+        for license in get_action('license_list')({}, {}):
             if license.get('url') == dcat_dict.get('license'):
                 package_dict['license_id'] = license.get('id')
                 break
@@ -76,6 +75,14 @@ def dcat_to_ckan(dcat_dict):
         if disallow_file_format(clean_format):
             log.debug('Skip disallowed format %s: %s' % (
                 format, distribution.get('downloadURL') or distribution.get('accessURL'))
+            )
+            continue
+
+        # skip data dictionaries
+        if asbool(distribution.get('isDataDictionary', False)):
+            log.debug('Skip data dictionary for %s: %s' % (
+                distribution.get('title', dcat_dict.get('title')),
+                distribution.get('downloadURL') or distribution.get('accessURL'))
             )
             continue
 
@@ -150,15 +157,15 @@ def ckan_to_dcat(package_dict):
         dcat_dict['distribution'].append(distribution)
 
         if resource.get('is_data_dict_populated'):
-            data_dictionary_distro = {
-                'title': 'Data Dictionary {}'.format(resource.get('name')),
-                'description': 'Data Dictionary of {}'.format(resource.get('url')),
+            data_dictionary_distrib = {
+                'title': 'Data Dictionary - {}'.format(resource.get('name')),
+                'description': 'Data Dictionary for {}'.format(resource.get('url')),
                 'format': 'CSV',
-                'accessURL': '{}/datastore/dictionary_download/{}'.format(
+                'downloadURL': '{}/datastore/dictionary_download/{}'.format(
                     config.get('ckan.site_url'), resource.get('id')),
-                'modified': resource.get('metadata_modified', ""),
+                'isDataDictionary': True,
             }
-            dcat_dict['distribution'].append(data_dictionary_distro)
+            dcat_dict['distribution'].append(data_dictionary_distrib)
     return dcat_dict
 
 

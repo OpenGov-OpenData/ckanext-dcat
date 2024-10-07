@@ -87,33 +87,32 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
   ]
 }
         '''
-        cls.json_content_with_distribution_which_should_not_be_harvested = '''
-        {
-          "dataset":[
-            {"@type": "dcat:Dataset",
-             "identifier": "http://example.com/datasets/example1",
-             "title": "Example dataset 1",
-             "description": "Lots of species",
-             "publisher": {"name": "Example Department of Wildlife"},
-             "license": "https://example.com/license",
-             "distribution":[
-               {"@type":"dcat:Distribution",
-                "title":"Example resource 1",
-                "format":"Web page",
-                "mediaType":"text/html",
-                "accessURL":"http://example.com/datasets/example1"},
-             {"@type":"dcat:Distribution",
-                "title":"Data Dictionary",
-                "format":"Web page",
-                "mediaType":"CSV",
-                "accessURL":"http://example.com/datasets/example1",
-                "isHarvestable": false
-                }
-              ]
-            }
-          ]
-        }
-                '''
+        cls.json_content_with_distribution_for_data_dictionary = '''
+{
+  "dataset":[
+    {"@type": "dcat:Dataset",
+     "identifier": "http://example.com/datasets/example1",
+     "title": "Example dataset 1",
+     "description": "Lots of species",
+     "publisher": {"name": "Example Department of Wildlife"},
+     "license": "https://example.com/license",
+     "distribution":[
+       {"@type":"dcat:Distribution",
+        "title":"Example resource 1",
+        "format":"Web page",
+        "mediaType":"text/html",
+        "accessURL":"http://example.com/datasets/example1"},
+        {"@type":"dcat:Distribution",
+        "title":"Data Dictionary - Example resource 1",
+        "format":"CSV",
+        "mediaType":"text/csv",
+        "downloadURL":"http://example.com/datastore/dictionary_download/example1",
+        "isDataDictionary": true}
+      ]
+    }
+  ]
+}
+        '''
 
         # invalid_tags dataset
         cls.json_content_invalid_tags_dataset = '{"dataset":[%s]}' % cls.json_content_invalid_tags
@@ -169,8 +168,8 @@ class TestDCATJSONHarvestFunctional(FunctionalHarvestTest):
         # because the resource metadata is unchanged, the ID is kept the same
         assert new_resources[0]['id'] == existing_resources[0]['id']
         
-    def test_harvest_ignore_unharvestable_resources(self):
-        content = self.json_content_with_distribution_which_should_not_be_harvested
+    def test_harvest_ignore_data_dictionary_resources(self):
+        content = self.json_content_with_distribution_for_data_dictionary
         existing_resources, new_resources = \
             self._test_harvest_twice(content, content)
 

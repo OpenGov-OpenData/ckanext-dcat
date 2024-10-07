@@ -65,8 +65,6 @@ class DCATJSONHarvester(DCATHarvester):
             elif org_filter_exclude:
                 if dcat_publisher_name in org_filter_exclude:
                     continue
-            # remove unharvestable distros
-            dataset['distribution'] = [distro for distro in dataset.get('distribution', []) if distro.get('isHarvestable', True)]
 
             as_string = json.dumps(dataset)
 
@@ -450,9 +448,9 @@ def push_data_dictionary(context, resource, distribution):
     for dist in distribution:
         if ((dist.get('downloadURL') == resource.get('url') or dist.get('accessURL') == resource.get('url'))
                 and dist.get('title') == resource.get('name')
-                and dist.get('datastoreMetadata')):
+                and 'action/datastore_search' in dist.get('describedBy', '')):
             try:
-                datastore_response = requests.get(dist.get('datastoreMetadata'), timeout=30)
+                datastore_response = requests.get(dist.get('describedBy'), timeout=30)
                 data = datastore_response.json()
                 result = data.get('result', {})
                 fields = result.get('fields', [])
