@@ -75,4 +75,21 @@ jobs:
         ckan -c test.ini db init
         ckan -c test.ini db pending-migrations --apply
     - name: Run tests
-      run: pytest --ckan-ini=test.ini --cov=ckanext.dcat --cov-report=term-missing --cov-append --disable-warnings ckanext/dcat/tests
+      run: pytest --ckan-ini=test.ini --cov=ckanext.dcat --cov-report=xml --cov-report xml:coverage.xml --cov-append --disable-warnings ckanext/dcat/tests
+    - name: Upload coverage report to codecov
+      uses: codecov/codecov-action@v1
+      with:
+        file: ./coverage.xml
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@master
+      with:
+        args: >
+          -Dsonar.projectKey=ckanext-dcat
+          -Dsonar.sources=ckanext/dcat
+          -Dsonar.tests=ckanext/dcat/tests
+          -Dsonar.exclusions=ckanext/dcat/tests/**
+          -Dsonar.python.coverage.reportPaths=coverage.xml
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_API_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_EXTERNAL_URL }}
+
