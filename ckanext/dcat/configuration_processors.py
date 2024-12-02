@@ -10,6 +10,7 @@ from ckan import model
 from ckan import plugins as p
 from ckan.lib.munge import substitute_ascii_equivalents
 from ckan.logic import NotFound, get_action
+from ckanext.dcat.converters import get_bbox_geojson
 
 
 def munge_to_length(string, min_length, max_length):
@@ -255,6 +256,10 @@ class MappingFields(BaseConfigProcessor):
                     publisher_key = source_field.split('.')[1]
                     if dcat_dict.get('publisher', {}).get(publisher_key):
                         value = dcat_dict.get('publisher', {}).get(publisher_key)
+                elif source_field == ('spatial'):
+                    bbox_geojson = get_bbox_geojson(dcat_dict.get('spatial'))
+                    if bbox_geojson:
+                        value = bbox_geojson
                 elif dcat_dict.get(source_field):
                     value = dcat_dict.get(source_field)
                 else:
@@ -263,6 +268,10 @@ class MappingFields(BaseConfigProcessor):
                 # If value is a list, convert to string
                 if isinstance(value, list):
                     value = ', '.join(str(x) for x in value)
+
+                # If value is a dict, convert to string
+                if isinstance(value, dict):
+                    value = json.dumps(value)
 
                 # If configured convert timestamp to separate date and time formats
                 if dcat_dict.get('issued'):
