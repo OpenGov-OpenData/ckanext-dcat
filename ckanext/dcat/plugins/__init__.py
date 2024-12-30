@@ -30,6 +30,13 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 I18N_DIR = os.path.join(HERE, u"../i18n")
 
 
+def config_declaration(func):
+    if p.toolkit.check_ckan_version(min_version="2.10.0"):
+        return p.toolkit.blanket.config_declarations(func)
+    else:
+        return func
+
+
 def _get_dataset_schema(dataset_type="dataset"):
     schema = None
     try:
@@ -43,6 +50,7 @@ def _get_dataset_schema(dataset_type="dataset"):
     return schema
 
 
+@config_declaration
 class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
 
     p.implements(p.IConfigurer, inherit=True)
@@ -178,9 +186,9 @@ class DCATPlugin(p.SingletonPlugin, DefaultTranslation):
                                 # Index a flattened version
                                 new_key = f'extras_{field["field_name"]}__{key}'
                                 if not dataset_dict.get(new_key):
-                                    dataset_dict[new_key] = value
+                                    dataset_dict[new_key] = str(value)
                                 else:
-                                    dataset_dict[new_key] += ' ' + value
+                                    dataset_dict[new_key] += ' ' + str(value)
 
                     subfields = dataset_dict.pop(field['field_name'], None)
                     if field['field_name'] == 'spatial_coverage':

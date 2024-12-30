@@ -28,7 +28,14 @@ RDF_PROFILES_ENTRY_POINT_GROUP = 'ckan.rdf.profiles'
 RDF_PROFILES_CONFIG_OPTION = 'ckanext.dcat.rdf.profiles'
 COMPAT_MODE_CONFIG_OPTION = 'ckanext.dcat.compatibility_mode'
 
-DEFAULT_RDF_PROFILES = ['euro_dcat_ap_2']
+DEFAULT_RDF_PROFILES = ['euro_dcat_ap_3']
+
+
+def _get_default_rdf_profiles():
+    """Helper function used fo documenting the rdf profiles config option"""
+    return " ".join(DEFAULT_RDF_PROFILES)
+
+SUPPORTED_PAGINATION_COLLECTION_DESIGNS = [HYDRA.PartialCollectionView, HYDRA.PagedCollection]
 
 
 class RDFProcessor(object):
@@ -120,14 +127,15 @@ class RDFParser(RDFProcessor):
         '''
         Returns the URL of the next page or None if there is no next page
         '''
-        for pagination_node in self.g.subjects(RDF.type, HYDRA.PagedCollection):
-            # Try to find HYDRA.next first
-            for o in self.g.objects(pagination_node, HYDRA.next):
-                return str(o)
+        for supported_collection_type in SUPPORTED_PAGINATION_COLLECTION_DESIGNS:
+            for pagination_node in self.g.subjects(RDF.type, supported_collection_type):
+                # Try to find HYDRA.next first
+                for o in self.g.objects(pagination_node, HYDRA.next):
+                    return str(o)
 
-            # If HYDRA.next is not found, try HYDRA.nextPage (deprecated)
-            for o in self.g.objects(pagination_node, HYDRA.nextPage):
-                return str(o)
+                # If HYDRA.next is not found, try HYDRA.nextPage (deprecated)
+                for o in self.g.objects(pagination_node, HYDRA.nextPage):
+                    return str(o)
         return None
 
     def parse(self, data, _format=None):
@@ -399,7 +407,8 @@ class RDFSerializer(RDFProcessor):
                                  ('name', Literal, FOAF.name, True,),
                                  ('email', Literal, FOAF.mbox, False,),
                                  ('url', URIRef, FOAF.homepage,False,),
-                                 ('type', Literal, DCT.type, False,))
+                                 ('type', Literal, DCT.type, False,),
+                                 ('identifier', URIRef, DCT.identifier, False,))
 
             _pub = _get_from_extra('source_catalog_publisher')
             if _pub:
