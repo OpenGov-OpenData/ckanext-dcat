@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 from dateutil.parser import parse as parse_date
 from rdflib import term, URIRef, BNode, Literal
-from rdflib.namespace import Namespace, RDF, XSD, SKOS, RDFS
+from rdflib.namespace import Namespace, RDF, XSD, SKOS, RDFS, ORG
 from geomet import wkt, InvalidGeoJSONException
 
 from ckantoolkit import config, url_for, asbool, aslist, get_action, ObjectNotFound
@@ -13,9 +13,11 @@ from ckan.lib.helpers import resource_formats
 from ckanext.dcat.utils import DCAT_EXPOSE_SUBCATALOGS
 from ckanext.dcat.validators import is_year, is_year_month, is_date
 
+CNT = Namespace("http://www.w3.org/2011/content#")
 DCT = Namespace("http://purl.org/dc/terms/")
 DCAT = Namespace("http://www.w3.org/ns/dcat#")
 DCATAP = Namespace("http://data.europa.eu/r5r/")
+DCATUS = Namespace("http://resources.data.gov/ontology/dcat-us#")
 ADMS = Namespace("http://www.w3.org/ns/adms#")
 VCARD = Namespace("http://www.w3.org/2006/vcard/ns#")
 FOAF = Namespace("http://xmlns.com/foaf/0.1/")
@@ -27,9 +29,11 @@ OWL = Namespace("http://www.w3.org/2002/07/owl#")
 SPDX = Namespace("http://spdx.org/rdf/terms#")
 
 namespaces = {
+    "cnt": CNT,
     "dct": DCT,
     "dcat": DCAT,
     "dcatap": DCATAP,
+    "dcatus": DCATUS,
     "adms": ADMS,
     "vcard": VCARD,
     "foaf": FOAF,
@@ -39,6 +43,7 @@ namespaces = {
     "locn": LOCN,
     "gsp": GSP,
     "owl": OWL,
+    "org": ORG,
     "spdx": SPDX,
 }
 
@@ -69,7 +74,7 @@ class URIRefOrLiteral(object):
     Like CleanedURIRef, this is a factory class.
     """
 
-    def __new__(cls, value):
+    def __new__(cls, value, lang=None):
         try:
             stripped_value = value.strip()
             if isinstance(value, str) and (
@@ -83,10 +88,10 @@ class URIRefOrLiteral(object):
                 # URI is fine, return the object
                 return uri_obj
             else:
-                return Literal(value)
+                return Literal(value, lang=lang)
         except Exception:
             # In case something goes wrong: use Literal
-            return Literal(value)
+            return Literal(value, lang=lang)
 
 
 class CleanedURIRef(object):
@@ -123,6 +128,8 @@ class RDFProfile(object):
 
     _dataset_schema = None
 
+    _form_languages = None
+
     # Cache for mappings of licenses URL/title to ID built when needed in
     # _license().
     _licenceregister_cache = None
@@ -145,6 +152,9 @@ class RDFProfile(object):
 
         self.compatibility_mode = compatibility_mode
 
+        self._default_lang = config.get("ckan.locale_default", "en")
+
+
         try:
             schema_show = get_action("scheming_dataset_schema_show")
             try:
@@ -156,6 +166,9 @@ class RDFProfile(object):
 
         except KeyError:
             pass
+
+        if self._dataset_schema:
+            self._form_languages = self._dataset_schema.get("form_languages")
 
     def _datasets(self):
         """
@@ -201,26 +214,72 @@ class RDFProfile(object):
             return _object
         return None
 
-    def _object_value(self, subject, predicate):
+    def _object_value(self, subject, predicate, multilingual=False):
         """
         Given a subject and a predicate, returns the value of the object
 
         Both subject and predicate must be rdflib URIRef or BNode objects
 
         If found, the string representation is returned, else an empty string
+
+        If multilingual is True, a dict with the language codes as keys will be
+        returned for each language found. e.g.
+
+            {
+                "en": "Dataset title",
+                "es": "Título del conjunto de datos"
+            }
+
+        If one of the languages defined in `form_languages` in the schema is not
+        found in the graph, an empty string will be returned.
+
+            {
+                "en": "Dataset title",
+                "es": ""
+            }
+
         """
-        default_lang = config.get("ckan.locale_default", "en")
+        if multilingual:
+            return self._object_value_multilingual(subject, predicate)
         fallback = ""
         for o in self.g.objects(subject, predicate):
             if isinstance(o, Literal):
-                if o.language and o.language == default_lang:
+                if o.language and o.language == self._default_lang:
                     return str(o)
-                # Use first object as fallback if no object with the default language is available
+                # Use first object as fallback if no object with the default
+                # language is available
                 elif fallback == "":
                     fallback = str(o)
+            elif len(list(self.g.objects(o, RDFS.label))):
+                return str(next(self.g.objects(o, RDFS.label)))
             else:
                 return str(o)
         return fallback
+
+    def _object_value_multilingual(self, subject, predicate):
+        out = {}
+        for o in self.g.objects(subject, predicate):
+
+            if isinstance(o, Literal):
+                if o.language:
+                    out[o.language] = str(o)
+                else:
+                    out[self._default_lang] = str(o)
+            elif len(list(self.g.objects(o, RDFS.label))):
+                for label in self.g.objects(o, RDFS.label):
+                    if label.language:
+                        out[label.language] = str(label)
+                    else:
+                        out[self._default_lang] = str(label)
+            else:
+                out[self._default_lang] = str(o)
+
+        if self._form_languages:
+            for lang in self._form_languages:
+                if lang not in out:
+                    out[lang] = ""
+
+        return out
 
     def _object_value_multiple_predicate(self, subject, predicates):
         """
@@ -299,9 +358,44 @@ class RDFProfile(object):
 
         Both subject and predicate must be rdflib URIRef or BNode  objects
 
-        If no values found, returns an empty string
+        If no values found, returns an empty list
         """
         return [str(o) for o in self.g.objects(subject, predicate)]
+
+    def _object_value_list_multilingual(self, subject, predicate):
+        """
+        Given a subject and a predicate, returns a dict with the language codes
+        as keys and the list of object values as values. e.g.
+
+            {
+                "en": ["Oaks", "Pines"],
+                "es": ["Robles", "Pinos"],
+            }
+
+        If one of the languages defined in `form_languages` in the schema is not
+        found in the graph, an empty list will be returned.
+
+            {
+                "en": ["Oaks", "Pines"],
+                "es": [],
+            }
+
+        Both subject and predicate must be rdflib URIRef or BNode  objects
+
+        If no values found, returns an empty list
+        """
+        out = {}
+        for o in self.g.objects(subject, predicate):
+            lang = o.language or self._default_lang
+            if lang not in out:
+                out[lang] = []
+            out[lang].append(str(o))
+
+        if self._form_languages:
+            for lang in self._form_languages:
+                if lang not in out:
+                    out[lang] = []
+        return out
 
     def _get_vcard_property_value(
         self, subject, predicate, predicate_string_property=None
@@ -338,9 +432,6 @@ class RDFProfile(object):
 
         It checks for time intervals defined with DCAT, W3C Time hasBeginning & hasEnd
         and schema.org startDate & endDate.
-
-        Note that partial dates will be expanded to the first month / day
-        value, eg '1904' -> '1904-01-01'.
 
         Returns a tuple with the start and end date values, both of which
         can be None if not found
@@ -419,60 +510,49 @@ class RDFProfile(object):
         else:
             dataset_dict["extras"].append({"key": key, "value": value})
 
-    def _publisher(self, subject, predicate):
+    def _agents_details(self, subject, predicate):
         """
-        Returns a dict with details about a dct:publisher entity, a foaf:Agent
+        Returns a list of dicts with details about a foaf:Agent property, e.g.
+        dct:publisher or dct:creator entity.
 
         Both subject and predicate must be rdflib URIRef or BNode objects
 
         Examples:
 
-        <dct:publisher>
+        <dct:publisher> or <dct:creator>
             <foaf:Organization rdf:about="http://orgs.vocab.org/some-org">
                 <foaf:name>Publishing Organization for dataset 1</foaf:name>
                 <foaf:mbox>contact@some.org</foaf:mbox>
                 <foaf:homepage>http://some.org</foaf:homepage>
                 <dct:type rdf:resource="http://purl.org/adms/publishertype/NonProfitOrganisation"/>
             </foaf:Organization>
-        </dct:publisher>
 
-        {
-            'uri': 'http://orgs.vocab.org/some-org',
-            'name': 'Publishing Organization for dataset 1',
-            'email': 'contact@some.org',
-            'url': 'http://some.org',
-            'type': 'http://purl.org/adms/publishertype/NonProfitOrganisation',
-        }
-
-        <dct:publisher rdf:resource="http://publications.europa.eu/resource/authority/corporate-body/EURCOU" />
-
-        {
-            'uri': 'http://publications.europa.eu/resource/authority/corporate-body/EURCOU'
-        }
-
-        Returns keys for uri, name, email, url and type with the values set to
-        an empty string if they could not be found
+        Returns keys for uri, name, email, url, type, and identifier with the values set to
+        an empty string if they could not be found.
         """
 
-        publisher = {}
-
+        agents = []
         for agent in self.g.objects(subject, predicate):
+            agent_details = {}
+            agent_details["uri"] = str(agent) if isinstance(agent, term.URIRef) else ""
+            agent_details["name"] = self._object_value(agent, FOAF.name)
+            agent_details["email"] = self._without_mailto(
+                self._object_value(agent, FOAF.mbox)
+            )
+            if not agent_details["email"]:
+                agent_details["email"] = self._without_mailto(
+                    self._object_value(agent, VCARD.hasEmail)
+                )
+            agent_details["url"] = self._object_value(agent, FOAF.homepage)
+            agent_details["type"] = self._object_value(agent, DCT.type)
+            agent_details['identifier'] = self._object_value(agent, DCT.identifier)
+            agents.append(agent_details)
 
-            publisher["uri"] = str(agent) if isinstance(agent, term.URIRef) else ""
-
-            publisher["name"] = self._object_value(agent, FOAF.name)
-
-            publisher["email"] = self._object_value(agent, FOAF.mbox)
-
-            publisher["url"] = self._object_value(agent, FOAF.homepage)
-
-            publisher["type"] = self._object_value(agent, DCT.type)
-
-        return publisher
+        return agents
 
     def _contact_details(self, subject, predicate):
         """
-        Returns a dict with details about a vcard expression
+        Returns a list of dicts with details about vcard expressions
 
         Both subject and predicate must be rdflib URIRef or BNode objects
 
@@ -480,11 +560,11 @@ class RDFProfile(object):
         an empty string if they could not be found
         """
 
-        contact = {}
-
+        contacts = []
         for agent in self.g.objects(subject, predicate):
 
-            contact["uri"] = str(agent) if isinstance(agent, term.URIRef) else ""
+            contact = {}
+            contact["uri"] = str(agent) if isinstance(agent, URIRef) else ""
 
             contact["name"] = self._get_vcard_property_value(
                 agent, VCARD.hasFN, VCARD.fn
@@ -494,7 +574,13 @@ class RDFProfile(object):
                 self._get_vcard_property_value(agent, VCARD.hasEmail)
             )
 
-        return contact
+            contact["identifier"] = self._get_vcard_property_value(agent, VCARD.hasUID)
+
+            contact["url"] = self._get_vcard_property_value(agent, VCARD.hasURL)
+
+            contacts.append(contact)
+
+        return contacts
 
     def _parse_geodata(self, spatial, datatype, cur_value):
         """
@@ -726,6 +812,9 @@ class RDFProfile(object):
                     items = value.split(",")
                 else:
                     items = [value]  # Normal text value
+        elif isinstance(value, ((int, float, complex))):
+            items = [value]  # number
+
         return items
 
     def _add_spatial_value_to_graph(self, spatial_ref, predicate, value):
@@ -734,9 +823,7 @@ class RDFProfile(object):
         or object.
         """
         spatial_formats = aslist(
-            config.get(
-                "ckanext.dcat.output_spatial_format", DEFAULT_SPATIAL_FORMATS
-            )
+            config.get("ckanext.dcat.output_spatial_format", DEFAULT_SPATIAL_FORMATS)
         )
 
         if isinstance(value, str):
@@ -775,6 +862,45 @@ class RDFProfile(object):
                 }
             )
 
+    def _add_statement_to_graph(self, data_dict, key, subject, predicate, _class=None):
+        """
+        Adds a statement property to the graph.
+        If it is a Literal value, it is added as a node (with a class if provided)
+        with a RDFS.label property, eg:
+
+            dct:accessRights [ a dct:RightsStatement ;
+                rdfs:label "Statement about access rights" ] ;
+
+        An URI can also be used:
+
+            dct:accessRights <https://example.org/vocab/access-right/TODO/PUBLIC> ;
+
+            [...]
+
+            <https://example.org/vocab/access-right/TODO/PUBLIC> a dct:RightsStatement .
+        """
+        value = self._get_dict_value(data_dict, key)
+        if value:
+            if isinstance(value, dict):
+                _objects = []
+                for lang in value:
+                    _objects.append(URIRefOrLiteral(value[lang], lang))
+            else:
+                _objects = [URIRefOrLiteral(value)]
+            statement_ref = None
+            for _object in _objects:
+                if isinstance(_object, Literal):
+                    if not statement_ref:
+                        statement_ref = BNode()
+                        self.g.add((subject, predicate, statement_ref))
+                        if _class:
+                            self.g.add((statement_ref, RDF.type, _class))
+                    self.g.add((statement_ref, RDFS.label, _object))
+                else:
+                    self.g.add((subject, predicate, _object))
+                    if _class:
+                        self.g.add((_object, RDF.type, _class))
+
     def _schema_field(self, key):
         """
         Returns the schema field information if the provided key exists as a field in
@@ -798,6 +924,32 @@ class RDFProfile(object):
         for field in self._dataset_schema["resource_fields"]:
             if field["field_name"] == key:
                 return field
+
+    def _multilingual_dataset_fields(self):
+        """
+        Return a list of field names in the dataset shema that have multilingual
+        values (i.e. that use one of the fluent presets)
+        """
+        return self._multilingual_fields(entity="dataset")
+
+    def _multilingual_resource_fields(self):
+        """
+        Return a list of field names in the resource schema that have multilingual
+        values (i.e. that use one of the fluent presets)
+        """
+        return self._multilingual_fields(entity="resource")
+
+    def _multilingual_fields(self, entity="dataset"):
+        if not self._dataset_schema:
+            return []
+
+        out = []
+        for field in self._dataset_schema[f"{entity}_fields"]:
+            if field.get("validators") and any(
+                v for v in field["validators"].split() if v.startswith("fluent")
+            ):
+                out.append(field["field_name"])
+        return out
 
     def _set_dataset_value(self, dataset_dict, key, value):
         """
@@ -858,8 +1010,13 @@ class RDFProfile(object):
     def _add_triples_from_dict(
         self, _dict, subject, items, list_value=False, date_value=False
     ):
+
         for item in items:
-            key, predicate, fallbacks, _type = item
+            try:
+                key, predicate, fallbacks, _type, _class = item
+            except ValueError:
+                key, predicate, fallbacks, _type = item
+                _class = None
             self._add_triple_from_dict(
                 _dict,
                 subject,
@@ -869,6 +1026,7 @@ class RDFProfile(object):
                 list_value=list_value,
                 date_value=date_value,
                 _type=_type,
+                _class=_class,
             )
 
     def _add_triple_from_dict(
@@ -882,6 +1040,7 @@ class RDFProfile(object):
         date_value=False,
         _type=Literal,
         _datatype=None,
+        _class=None,
         value_modifier=None,
     ):
         """
@@ -895,6 +1054,8 @@ class RDFProfile(object):
         Using `value_modifier`, a function taking the extracted value and
         returning a modified value can be passed.
         If a value was found, the modifier is applied before adding the value.
+
+        `_class` is the optional RDF class of the entity being added.
 
         If `list_value` or `date_value` are True, then the value is treated as
         a list or a date respectively (see `_add_list_triple` and
@@ -912,11 +1073,20 @@ class RDFProfile(object):
             value = value_modifier(value)
 
         if value and list_value:
-            self._add_list_triple(subject, predicate, value, _type, _datatype)
+            self._add_list_triple(subject, predicate, value, _type, _datatype, _class)
         elif value and date_value:
             self._add_date_triple(subject, predicate, value, _type)
         elif value:
+            # If it is a dict, we assume it's a fluent multilingual field
+            if isinstance(value, dict):
+                # We assume that all translated field values are Literals
+                for lang, translated_value in value.items():
+                    object = Literal(translated_value, datatype=_datatype, lang=lang)
+                    self.g.add((subject, predicate, object))
+                return
+
             # Normal text value
+
             # ensure URIRef items are preprocessed (space removal/url encoding)
             if _type == URIRef:
                 _type = CleanedURIRef
@@ -926,8 +1096,11 @@ class RDFProfile(object):
                 object = _type(value)
             self.g.add((subject, predicate, object))
 
+            if _class and isinstance(object, URIRef):
+                self.g.add((object, RDF.type, _class))
+
     def _add_list_triple(
-        self, subject, predicate, value, _type=Literal, _datatype=None
+        self, subject, predicate, value, _type=Literal, _datatype=None, _class=None
     ):
         """
         Adds as many triples to the graph as values
@@ -947,6 +1120,9 @@ class RDFProfile(object):
             else:
                 object = _type(item)
             self.g.add((subject, predicate, object))
+
+            if _class and isinstance(object, URIRef):
+                self.g.add((object, RDF.type, _class))
 
     def _add_date_triple(self, subject, predicate, value, _type=Literal):
         """
@@ -1116,10 +1292,13 @@ class RDFProfile(object):
             if val:
                 out.append({"key": key, "value": val})
 
+        publishers = self._agents_details(catalog_ref, DCT.publisher)
+        if publishers:
+            publisher = publishers[0]
         out.append(
             {
                 "key": "source_catalog_publisher",
-                "value": json.dumps(self._publisher(catalog_ref, DCT.publisher)),
+                "value": json.dumps(publisher),
             }
         )
         return out

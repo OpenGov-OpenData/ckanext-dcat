@@ -9,7 +9,13 @@ from ckantoolkit import (
     Invalid,
     _,
 )
-from ckanext.scheming.validation import scheming_validator
+
+try:
+    from ckanext.scheming.validation import scheming_validator
+except ImportError:
+    def scheming_validator(func):
+        return func
+
 
 # https://www.w3.org/TR/xmlschema11-2/#gYear
 regexp_xsd_year = re.compile(
@@ -41,11 +47,18 @@ def is_date(value):
 def dcat_date(key, data, errors, context):
     value = data[key]
 
+    if not value:
+        data[key] = None
+        return
+
     if isinstance(value, datetime.datetime):
         return
 
-    if is_year(value) or is_year_month(value) or is_date(value):
-        return
+    try:
+        if is_year(value) or is_year_month(value) or is_date(value):
+            return
+    except TypeError:
+        raise Invalid(_("Dates must be provided as strings or datetime objects"))
 
     try:
         parse_date(value)
