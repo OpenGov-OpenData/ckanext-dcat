@@ -452,7 +452,7 @@ def push_data_dictionary(context, resource, distribution):
                 and dist.get('title') == resource.get('name')
                 and 'action/datastore_search' in dist.get('describedBy', '')):
             try:
-                datastore_response = requests.get(dist.get('describedBy'), timeout=30)
+                datastore_response = requests.get(dist.get('describedBy'), timeout=90)
                 data = datastore_response.json()
                 result = data.get('result', {})
                 fields = result.get('fields', [])
