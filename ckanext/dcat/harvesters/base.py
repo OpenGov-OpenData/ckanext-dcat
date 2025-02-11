@@ -99,7 +99,7 @@ class DCATHarvester(HarvesterBase):
                 r = session.head(url)
 
                 if r.status_code == 405 or r.status_code == 400:
-                    r = session.get(url, stream=True, timeout=30)
+                    r = session.get(url, stream=True, timeout=90)
                     did_get = True
                 r.raise_for_status()
 
@@ -113,7 +113,7 @@ class DCATHarvester(HarvesterBase):
                     return None, None
 
                 if not did_get:
-                    r = session.get(url, stream=True, timeout=30)
+                    r = session.get(url, stream=True, timeout=90)
 
                 length = 0
                 content = b''
