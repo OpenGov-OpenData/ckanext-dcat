@@ -17,6 +17,7 @@ from ckanext.harvest.logic.schema import unicode_safe
 from ckanext.dcat import converters
 from ckanext.dcat import utils
 from ckanext.dcat.harvesters.base import DCATHarvester
+from ckanext.dcat.exceptions import JSONDecodeErrorContext
 
 log = logging.getLogger(__name__)
 
@@ -33,7 +34,11 @@ class DCATJSONHarvester(DCATHarvester):
 
     def _get_guids_and_datasets(self, content):
 
-        doc = json.loads(content)
+        try:
+            doc = json.loads(content)
+        except json.JSONDecodeError as e:
+            # Raise custom exception which adds context
+            raise JSONDecodeErrorContext(e.msg, e.doc, e.pos) from e
 
         # Filter in/out datasets from particular organizations
         org_filter_include = self.config.get('organizations_filter_include', [])
