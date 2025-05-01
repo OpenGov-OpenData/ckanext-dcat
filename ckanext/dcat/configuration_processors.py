@@ -24,8 +24,8 @@ def munge_to_length(string, min_length, max_length):
 
 def munge_tag(tag):
     tag = substitute_ascii_equivalents(tag)
-    tag = tag.lower().strip()
-    tag = re.sub(r'[^a-zA-Z0-9\- ]', '', tag)
+    tag = tag.strip()
+    tag = re.sub(r'[^a-zA-Z0-9 \-_.]', '', tag)
     tag = munge_to_length(tag, model.MIN_TAG_LENGTH, model.MAX_TAG_LENGTH)
     return tag
 
