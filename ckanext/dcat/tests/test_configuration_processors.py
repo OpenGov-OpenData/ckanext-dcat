@@ -8,6 +8,7 @@ from ckanext.dcat.configuration_processors import (
     Publisher, ContactPoint,
     RemoteGroups,
     OrganizationFilter,
+    FormatFilter,
     ResourceFormatOrder,
     KeepExistingResources,
     UploadToDatastore
@@ -877,6 +878,82 @@ class TestRemoteGroups:
 
         group_names = sorted([group_dict.get("name") for group_dict in package["groups"]])
         assert group_names == ["climate", "science"]
+
+
+class TestOrganizationFilter:
+
+    processor = OrganizationFilter
+
+    def test_validation_correct_format(self):
+        config = {
+            "organizations_filter_include": [
+                "California Department of Technology",
+                "California Health and Human Services Agency",
+                "California Natural Resources Agency"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        config = {
+            "organizations_filter_include": "CDT, CalHHS, CNRA"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+
+
+class TestFormatFilter:
+
+    processor = FormatFilter
+
+    def test_validation_correct_format(self):
+        config = {
+            "format_filter_include": [
+                "CSV",
+                "GeoJSON"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+            assert config["format_filter_include"] == ["csv", "geojson"]
+        except ValueError:
+            assert False
+
+        config = {
+            "format_filter_exclude": [
+                "PDF"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+            assert config["format_filter_exclude"] == ["pdf"]
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        config = {
+            "format_filter_include": "CSV, GeoJSON"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+
+        config = {
+            "format_filter_exclude": "PDF"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
 
 
 class TestResourceFormatOrder:

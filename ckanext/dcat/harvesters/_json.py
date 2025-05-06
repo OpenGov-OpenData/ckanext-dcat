@@ -44,6 +44,10 @@ class DCATJSONHarvester(DCATHarvester):
         org_filter_include = self.config.get('organizations_filter_include', [])
         org_filter_exclude = self.config.get('organizations_filter_exclude', [])
 
+        # Filter in/out datasets from particular organizations
+        format_filter_include = self.config.get('format_filter_include', [])
+        format_filter_exclude = self.config.get('format_filter_exclude', [])
+
         if isinstance(doc, list):
             # Assume a list of datasets
             datasets = doc
@@ -70,6 +74,20 @@ class DCATJSONHarvester(DCATHarvester):
                     continue
             elif org_filter_exclude:
                 if dcat_publisher_name in org_filter_exclude:
+                    continue
+
+            # Include/exclude dataset based on particular formats
+            if format_filter_include or format_filter_exclude:
+                resource_formats = [
+                    dist.get('format', '').lower()
+                    for dist in dataset.get('distribution', [])
+                    if dist.get('format')
+                ]
+            if format_filter_include:
+                if not any(fmt in resource_formats for fmt in format_filter_include):
+                    continue
+            elif format_filter_exclude:
+                if any(fmt in resource_formats for fmt in format_filter_exclude):
                     continue
 
             as_string = json.dumps(dataset)

@@ -471,6 +471,39 @@ class OrganizationFilter(BaseConfigProcessor):
                 and 'organizations_filter_exclude' in config_obj:
             raise ValueError('Harvest configuration cannot contain both '
                              'organizations_filter_include and organizations_filter_exclude')
+        for key in ['organizations_filter_include', 'organizations_filter_exclude']:
+            if key in config_obj:
+                orgs_list = config_obj[key]
+                if not isinstance(orgs_list, list):
+                    raise ValueError(f"{key} must be a list of organizations")
+                if not orgs_list:
+                    raise ValueError(f"{key} cannot be empty")
+                if not all(isinstance(item, str) for item in orgs_list):
+                    raise ValueError(f"{key} must be a list of strings")
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
+
+
+class FormatFilter(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'format_filter_include' in config_obj \
+                and 'format_filter_exclude' in config_obj:
+            raise ValueError('Harvest configuration cannot contain both '
+                             'format_filter_include and format_filter_exclude')
+        for key in ['format_filter_include', 'format_filter_exclude']:
+            if key in config_obj:
+                formats_list = config_obj[key]
+                if not isinstance(formats_list, list):
+                    raise ValueError(f"{key} must be a list of formats")
+                if not formats_list:
+                    raise ValueError(f"{key} cannot be empty")
+                if not all(isinstance(item, str) for item in formats_list):
+                    raise ValueError(f"{key} must be a list of strings")
+                config_obj[key] = [fmt.lower() for fmt in formats_list]
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
