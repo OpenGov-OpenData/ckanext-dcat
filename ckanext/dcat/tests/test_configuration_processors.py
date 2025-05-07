@@ -9,6 +9,7 @@ from ckanext.dcat.configuration_processors import (
     RemoteGroups,
     OrganizationFilter,
     FormatFilter,
+    TagFilter,
     ResourceFormatOrder,
     KeepExistingResources,
     UploadToDatastore
@@ -897,9 +898,29 @@ class TestOrganizationFilter:
         except ValueError:
             assert False
 
+        config = {
+            "organizations_filter_exclude": [
+                "OEHHA ArcGIS Online",
+                "DTSC_Admin"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
     def test_validation_wrong_format(self):
         config = {
             "organizations_filter_include": "CDT, CalHHS, CNRA"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+        
+        config = {
+            "organizations_filter_exclude": "OEHHA ArcGIS Online, DTSC_Admin"
         }
         try:
             self.processor.check_config(config)
@@ -948,6 +969,53 @@ class TestFormatFilter:
 
         config = {
             "format_filter_exclude": "PDF"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+
+
+class TestTagFilter:
+
+    processor = TagFilter
+
+    def test_validation_correct_format(self):
+        config = {
+            "tag_filter_include": [
+                "Climate",
+                "Water"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+        config = {
+            "tag_filter_exclude": [
+                "Application",
+                "Software"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
+    def test_validation_wrong_format(self):
+        config = {
+            "tag_filter_include": "Climate, Water"
+        }
+        try:
+            self.processor.check_config(config)
+            assert False
+        except ValueError:
+            assert True
+        
+        config = {
+            "tag_filter_exclude": "Application, Software"
         }
         try:
             self.processor.check_config(config)

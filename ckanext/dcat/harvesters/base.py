@@ -24,6 +24,7 @@ from ckanext.dcat.configuration_processors import (
     RemoteGroups,
     OrganizationFilter,
     FormatFilter,
+    TagFilter,
     ResourceFormatOrder,
     KeepExistingResources,
     UploadToDatastore
@@ -54,6 +55,7 @@ class DCATHarvester(HarvesterBase):
         RemoteGroups,
         OrganizationFilter,
         FormatFilter,
+        TagFilter,
         ResourceFormatOrder,
         KeepExistingResources,
         UploadToDatastore
