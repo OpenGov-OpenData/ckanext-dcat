@@ -123,8 +123,8 @@ class DefaultGroups(BaseConfigProcessor):
         if 'default_groups' in config_obj:
             if not isinstance(config_obj['default_groups'], list):
                 raise ValueError('default_groups must be a *list* of group names/ids')
-            if config_obj['default_groups'] and not isinstance(config_obj['default_groups'][0], str):
-                raise ValueError('default_groups must be a list of group names/ids (i.e. strings)')
+            if not all(isinstance(item, str) for item in config_obj['default_groups']):
+                raise ValueError('default_groups must be a *list* of group names/ids (i.e. strings)')
 
             # Check if default groups exist
             context = {'model': model, 'user': p.toolkit.c.user}
@@ -471,6 +471,56 @@ class OrganizationFilter(BaseConfigProcessor):
                 and 'organizations_filter_exclude' in config_obj:
             raise ValueError('Harvest configuration cannot contain both '
                              'organizations_filter_include and organizations_filter_exclude')
+        for key in ['organizations_filter_include', 'organizations_filter_exclude']:
+            if key in config_obj:
+                orgs_list = config_obj[key]
+                if not isinstance(orgs_list, list):
+                    raise ValueError(f"{key} must be a list of organizations")
+                if not all(isinstance(item, str) for item in orgs_list):
+                    raise ValueError(f"{key} must be a list of strings")
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
+
+
+class FormatFilter(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'format_filter_include' in config_obj \
+                and 'format_filter_exclude' in config_obj:
+            raise ValueError('Harvest configuration cannot contain both '
+                             'format_filter_include and format_filter_exclude')
+        for key in ['format_filter_include', 'format_filter_exclude']:
+            if key in config_obj:
+                formats_list = config_obj[key]
+                if not isinstance(formats_list, list):
+                    raise ValueError(f"{key} must be a list of formats")
+                if not all(isinstance(item, str) for item in formats_list):
+                    raise ValueError(f"{key} must be a list of strings")
+                config_obj[key] = [fmt.lower() for fmt in formats_list]
+
+    @staticmethod
+    def modify_package_dict(package_dict, config, dcat_dict):
+        pass
+
+
+class TagFilter(BaseConfigProcessor):
+
+    @staticmethod
+    def check_config(config_obj):
+        if 'tag_filter_include' in config_obj \
+                and 'tag_filter_exclude' in config_obj:
+            raise ValueError('Harvest configuration cannot contain both '
+                             'tag_filter_include and tag_filter_exclude')
+        for key in ['tag_filter_include', 'tag_filter_exclude']:
+            if key in config_obj:
+                tags_list = config_obj[key]
+                if not isinstance(tags_list, list):
+                    raise ValueError(f"{key} must be a list of tags")
+                if not all(isinstance(item, str) for item in tags_list):
+                    raise ValueError(f"{key} must be a list of strings")
 
     @staticmethod
     def modify_package_dict(package_dict, config, dcat_dict):
@@ -483,7 +533,9 @@ class ResourceFormatOrder(BaseConfigProcessor):
     def check_config(config_obj):
         if 'resource_format_order' in config_obj:
             if not isinstance(config_obj['resource_format_order'], list):
-                raise ValueError('Resource format order should be provided as a list of strings')
+                raise ValueError('resource_format_order must be a list of strings')
+            if not all(isinstance(item, str) for item in config_obj['resource_format_order']):
+                raise ValueError('resource_format_order must be a list of strings')
 
     @staticmethod
     def modify_package_dict(package_dict, config_obj, dcat_dict):

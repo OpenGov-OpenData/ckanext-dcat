@@ -40,10 +40,6 @@ class DCATJSONHarvester(DCATHarvester):
             # Raise custom exception which adds context
             raise JSONDecodeErrorContext(e.msg, e.doc, e.pos) from e
 
-        # Filter in/out datasets from particular organizations
-        org_filter_include = self.config.get('organizations_filter_include', [])
-        org_filter_exclude = self.config.get('organizations_filter_exclude', [])
-
         if isinstance(doc, list):
             # Assume a list of datasets
             datasets = doc
@@ -51,6 +47,18 @@ class DCATJSONHarvester(DCATHarvester):
             datasets = doc.get('dataset', [])
         else:
             raise ValueError('Wrong JSON object')
+
+        # Filter in/out datasets from particular organizations
+        org_filter_include = self.config.get('organizations_filter_include', [])
+        org_filter_exclude = self.config.get('organizations_filter_exclude', [])
+
+        # Filter in/out datasets with particular formats
+        format_filter_include = self.config.get('format_filter_include', [])
+        format_filter_exclude = self.config.get('format_filter_exclude', [])
+
+        # Filter in/out datasets with particular tags
+        tag_filter_include = self.config.get('tag_filter_include', [])
+        tag_filter_exclude = self.config.get('tag_filter_exclude', [])
 
         for dataset in datasets:
             # Get the organization name for the dataset
@@ -72,18 +80,39 @@ class DCATJSONHarvester(DCATHarvester):
                 if dcat_publisher_name in org_filter_exclude:
                     continue
 
+            # Include/exclude dataset based on particular formats
+            if format_filter_include or format_filter_exclude:
+                resource_formats = [
+                    dist.get('format', '').lower()
+                    for dist in dataset.get('distribution', [])
+                    if dist.get('format')
+                ]
+            if format_filter_include:
+                if not any(fmt in resource_formats for fmt in format_filter_include):
+                    continue
+            elif format_filter_exclude:
+                if any(fmt in resource_formats for fmt in format_filter_exclude):
+                    continue
+
+            # Include/exclude dataset based on particular tags
+            if tag_filter_include:
+                if not any(tag in dataset.get('keyword', []) for tag in tag_filter_include):
+                    continue
+            elif tag_filter_exclude:
+                if any(tag in dataset.get('keyword', []) for tag in tag_filter_exclude):
+                    continue
+
             as_string = json.dumps(dataset)
 
             # Get identifier
             guid = dataset.get('identifier')
+            if not guid:
+                # This is bad, any ideas welcomed
+                guid = sha1(as_string.encode('utf-8')).hexdigest()
 
             if self.config.get('parse_id_if_url'):
                 # Get id from identifier if it is a url
                 guid = utils.parse_identifier(dataset.get('identifier'))
-
-            if not guid:
-                # This is bad, any ideas welcomed
-                guid = sha1(as_string.encode('utf-8')).hexdigest()
 
             yield guid, as_string
 
