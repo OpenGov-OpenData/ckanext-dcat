@@ -48,17 +48,17 @@ class DCATJSONHarvester(DCATHarvester):
         else:
             raise ValueError('Wrong JSON object')
 
-        # Filter in/out datasets from particular organizations
+        # Filter datasets from particular organizations
         org_filter_include = self.config.get('organizations_filter_include', [])
         org_filter_exclude = self.config.get('organizations_filter_exclude', [])
 
-        # Filter in/out datasets with particular formats
-        format_filter_include = self.config.get('format_filter_include', [])
+        # Filter datasets with particular formats
         format_filter_exclude = self.config.get('format_filter_exclude', [])
+        format_filter_include = self.config.get('format_filter_include', [])
 
-        # Filter in/out datasets with particular tags
-        tag_filter_include = self.config.get('tag_filter_include', [])
+        # Filter datasets with particular tags
         tag_filter_exclude = self.config.get('tag_filter_exclude', [])
+        tag_filter_include = self.config.get('tag_filter_include', [])
 
         for dataset in datasets:
             # Get the organization name for the dataset
@@ -80,26 +80,26 @@ class DCATJSONHarvester(DCATHarvester):
                 if dcat_publisher_name in org_filter_exclude:
                     continue
 
-            # Include/exclude dataset based on particular formats
-            if format_filter_include or format_filter_exclude:
+            # Exclude/include dataset based on particular formats
+            if format_filter_exclude or format_filter_include:
                 resource_formats = [
                     dist.get('format', '').lower()
                     for dist in dataset.get('distribution', [])
                     if dist.get('format')
                 ]
+            if format_filter_exclude:
+                if any(fmt in resource_formats for fmt in format_filter_exclude):
+                    continue
             if format_filter_include:
                 if not any(fmt in resource_formats for fmt in format_filter_include):
                     continue
-            elif format_filter_exclude:
-                if any(fmt in resource_formats for fmt in format_filter_exclude):
-                    continue
 
-            # Include/exclude dataset based on particular tags
+            # Exclude/include dataset based on particular tags
+            if tag_filter_exclude:
+                if any(tag in dataset.get('keyword', []) for tag in tag_filter_exclude):
+                    continue
             if tag_filter_include:
                 if not any(tag in dataset.get('keyword', []) for tag in tag_filter_include):
-                    continue
-            elif tag_filter_exclude:
-                if any(tag in dataset.get('keyword', []) for tag in tag_filter_exclude):
                     continue
 
             as_string = json.dumps(dataset)
