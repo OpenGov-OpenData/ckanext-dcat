@@ -935,6 +935,17 @@ class TestFormatFilter:
 
     def test_validation_correct_format(self):
         config = {
+            "format_filter_exclude": [
+                "PDF"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+            assert config["format_filter_exclude"] == ["pdf"]
+        except ValueError:
+            assert False
+
+        config = {
             "format_filter_include": [
                 "CSV",
                 "GeoJSON"
@@ -946,20 +957,9 @@ class TestFormatFilter:
         except ValueError:
             assert False
 
-        config = {
-            "format_filter_exclude": [
-                "PDF"
-            ]
-        }
-        try:
-            self.processor.check_config(config)
-            assert config["format_filter_exclude"] == ["pdf"]
-        except ValueError:
-            assert False
-
     def test_validation_wrong_format(self):
         config = {
-            "format_filter_include": "CSV, GeoJSON"
+            "format_filter_exclude": "PDF"
         }
         try:
             self.processor.check_config(config)
@@ -968,7 +968,7 @@ class TestFormatFilter:
             assert True
 
         config = {
-            "format_filter_exclude": "PDF"
+            "format_filter_include": "CSV, GeoJSON"
         }
         try:
             self.processor.check_config(config)
@@ -983,17 +983,6 @@ class TestTagFilter:
 
     def test_validation_correct_format(self):
         config = {
-            "tag_filter_include": [
-                "Climate",
-                "Water"
-            ]
-        }
-        try:
-            self.processor.check_config(config)
-        except ValueError:
-            assert False
-
-        config = {
             "tag_filter_exclude": [
                 "Application",
                 "Software"
@@ -1004,18 +993,29 @@ class TestTagFilter:
         except ValueError:
             assert False
 
+        config = {
+            "tag_filter_include": [
+                "Climate",
+                "Water"
+            ]
+        }
+        try:
+            self.processor.check_config(config)
+        except ValueError:
+            assert False
+
     def test_validation_wrong_format(self):
         config = {
-            "tag_filter_include": "Climate, Water"
+            "tag_filter_exclude": "Application, Software"
         }
         try:
             self.processor.check_config(config)
             assert False
         except ValueError:
             assert True
-        
+
         config = {
-            "tag_filter_exclude": "Application, Software"
+            "tag_filter_include": "Climate, Water"
         }
         try:
             self.processor.check_config(config)

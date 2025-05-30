@@ -488,11 +488,7 @@ class FormatFilter(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
-        if 'format_filter_include' in config_obj \
-                and 'format_filter_exclude' in config_obj:
-            raise ValueError('Harvest configuration cannot contain both '
-                             'format_filter_include and format_filter_exclude')
-        for key in ['format_filter_include', 'format_filter_exclude']:
+        for key in ['format_filter_exclude', 'format_filter_include']:
             if key in config_obj:
                 formats_list = config_obj[key]
                 if not isinstance(formats_list, list):
@@ -510,11 +506,7 @@ class TagFilter(BaseConfigProcessor):
 
     @staticmethod
     def check_config(config_obj):
-        if 'tag_filter_include' in config_obj \
-                and 'tag_filter_exclude' in config_obj:
-            raise ValueError('Harvest configuration cannot contain both '
-                             'tag_filter_include and tag_filter_exclude')
-        for key in ['tag_filter_include', 'tag_filter_exclude']:
+        for key in ['tag_filter_exclude', 'tag_filter_include']:
             if key in config_obj:
                 tags_list = config_obj[key]
                 if not isinstance(tags_list, list):
