@@ -79,6 +79,10 @@ jobs:
         git clone https://github.com/OpenGov-OpenData/ckanext-scheming
         pip install -e ckanext-scheming
         git clone https://github.com/ckan/ckanext-fluent
+        # Checkout a specific commit that works with ckan 2.9
+        cd ckanext-fluent
+        git checkout 4e9340a934050e937bed49e6009d0971d880410a
+        cd ..
         pip install -e ckanext-fluent
     - name: Setup extension
       run: |
