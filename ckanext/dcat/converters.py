@@ -101,6 +101,21 @@ def dcat_to_ckan(dcat_dict):
             )
             continue
 
+        # Normalize distribution URL values
+        if 'downloadURL' in distribution:
+            normalized_downloadURL = _normalize_url_value(distribution['downloadURL'], 'downloadURL')
+            distribution['downloadURL'] = normalized_downloadURL
+
+        if 'accessURL' in distribution:
+            normalized_accessURL = _normalize_url_value(distribution['accessURL'], 'accessURL')
+            distribution['accessURL'] = normalized_accessURL
+
+        if not distribution.get('downloadURL') and not distribution.get('accessURL'):
+            log.debug('Skip resource %s, no valid URL in downloadURL or accessURL' % (
+                distribution.get('title', dcat_dict.get('title'))
+            ))
+            continue
+
         # skip data dictionaries
         if asbool(distribution.get('isDataDictionary', False)):
             log.debug('Skip data dictionary for %s: %s' % (
@@ -271,3 +286,26 @@ def get_bbox_geojson(spatial):
             coordinates = '[{},{},{},{},{}]'.format(point_a, point_b, point_c, point_d, point_a)
             bbox_str = '{\"type\": \"Polygon\", \"coordinates\": [' + coordinates + ']}'
             return bbox_str
+
+
+def _normalize_url_value(value, field_name='URL'):
+    """Extract first valid URL from string or list."""
+    if not value:
+        return ''
+
+    SUPPORTED_PROTOCOLS = ('http://', 'https://', 'ftp://', 'ftps://', 's3://')
+
+    if isinstance(value, str):
+        return value
+
+    if isinstance(value, list):
+        log.debug('%s provided as list with %d items', field_name, len(value))
+        for item in value:
+            if isinstance(item, str) and item.startswith(SUPPORTED_PROTOCOLS):
+                log.debug('%s: using first valid URL from list: %s', field_name, item)
+                return item
+        log.debug('%s provided as list but no valid URLs found', field_name)
+        return ''
+
+    log.warning('%s has unexpected type: %s', field_name, type(value).__name__)
+    return ''

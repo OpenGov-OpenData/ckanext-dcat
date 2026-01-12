@@ -482,7 +482,10 @@ def push_data_dictionary(context, resource, distribution):
     # Check for resource's data dictionary in the distribution
     fields = []
     for dist in distribution:
-        if ((dist.get('downloadURL') == resource.get('url') or dist.get('accessURL') == resource.get('url'))
+        # Normalize URLs for comparison
+        download_url = converters._normalize_url_value(dist.get('downloadURL'), 'downloadURL')
+        access_url = converters._normalize_url_value(dist.get('accessURL'), 'accessURL')
+        if ((download_url == resource.get('url') or access_url == resource.get('url'))
                 and dist.get('title') == resource.get('name')
                 and 'action/datastore_search' in dist.get('describedBy', '')):
             try:
