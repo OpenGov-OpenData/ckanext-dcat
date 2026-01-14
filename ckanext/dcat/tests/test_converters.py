@@ -82,3 +82,15 @@ def test_get_bbox_geojson():
         '[-115.5028, 41.3149], [-115.5028, 32.5718], '
         '[-124.161, 32.5718]]]}'
     )
+
+def test_normalize_url_value_with_list():
+    value = [
+        "withheld",
+        "withheld",
+        "https://www.wildlife.ca.gov/Data/BIOS",
+        "https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds69_fmu/FeatureServer",
+        "http://dx.doi.org/doi:10.5066/F7X06527"
+    ]
+
+    result = converters._normalize_url_value(value, 'accessURL')
+    assert result == "https://www.wildlife.ca.gov/Data/BIOS"
